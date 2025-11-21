@@ -7,7 +7,7 @@ import {
 
 import { parseUnits } from "viem/utils";
 
-import { readContract, waitForTransactionReceipt, writeContract } from '@wagmi/core';
+import { readContract, waitForTransactionReceipt, watchBlocks, writeContract } from '@wagmi/core';
 import { motion } from 'framer-motion';
 import useSound from "use-sound";
 import { Address } from "viem";
@@ -125,7 +125,8 @@ export default function TicTacToeOnChain() {
         }
     };
 
-    const fetchGameById = async (gameId: number): Promise<bigint | undefined> => {
+    const fetchGameById = async (gameId: number | null): Promise<bigint | undefined> => {
+        console.log(gameId)
         try {
             const result: any = await readContract(wagmiAdapter.wagmiConfig, {
                 abi: savvyTicTacToeABI,
@@ -146,8 +147,11 @@ export default function TicTacToeOnChain() {
                 lastMoveAt: BigInt(result[8]),
             };
 
+            console.log('afs 1');
+
 
             if (mappedGame.winner !== ZERO_ADDRESS) {
+                console.log('afs 2');
                 var textShow = '';
 
                 if (mappedGame.winner === address) {
@@ -164,11 +168,13 @@ export default function TicTacToeOnChain() {
                 showToast(textShow);
             }
             else if (mappedGame.state === 2) {
+                console.log('afs 3');
                 showToast("Draw game!!!")
                 playLoss();
                 setCurrentGame(null);
             }
             else {
+                console.log('afs 4');
                 setCurrentGame(mappedGame);
             }
 
@@ -332,7 +338,6 @@ export default function TicTacToeOnChain() {
     const isMyTurn = (): boolean => {
         if (!currentGame) return false;
 
-
         const me = address?.toLowerCase();
         const host = currentGame.host.toLowerCase();
         const challenger = currentGame.challenger?.toLowerCase();
@@ -343,19 +348,21 @@ export default function TicTacToeOnChain() {
         return false;
     };
 
-    /* ----------------------------------------
-     * WATCH BLOCKS → auto refresh
-     ---------------------------------------- */
-    useWatchBlocks({
-        onBlock() {
-            // Refresh available games list, the player's current status (host/challenger),
-            // the active game if there's one running, and the game board state.
-            refetchGames();
-            refetch();
-            if (currentGameId !== null) fetchGameById(currentGameId)
-        },
-        pollingInterval: 2000,
-    });
+    useEffect(() => {
+        const unwatch = watchBlocks(wagmiAdapter.wagmiConfig, {
+            blockTag: 'latest',
+            onBlock({ number }) {
+                console.log(number);
+                // Refresh available games list, the player's current status (host/challenger),
+                // the active game if there's one running, and the game board state.
+                refetchGames();
+                refetch();
+                fetchGameById(currentGameId)
+            },
+            onError(error) { },
+        });
+        return () => unwatch();
+    }, []);
 
     /* ----------------------------------------
      * PROCESS BOARD INTO UI FORMAT
@@ -468,6 +475,7 @@ export default function TicTacToeOnChain() {
                                         );
                                     })}
                                 </div>
+                                {<p>{currentGame?.turn}</p>}
                                 {currentGame?.state === GameState.InProgress &&
                                     <div className="mt-4 flex items-center justify-between text-sm text-slate-300">
                                         <div>Turn: <span className="font-semibold text-white">

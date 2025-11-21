@@ -350,6 +350,7 @@ export default function TicTacToeOnChain() {
     useEffect(() => {
         const unwatch = watchBlocks(wagmiAdapter.wagmiConfig, {
             blockTag: 'latest',
+            pollingInterval: 1000,
             onBlock({ number }) {
                 console.log(number);
                 // Refresh available games list, the player's current status (host/challenger),

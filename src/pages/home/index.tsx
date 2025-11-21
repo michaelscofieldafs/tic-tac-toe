@@ -7,7 +7,7 @@ import {
 
 import { parseUnits } from "viem/utils";
 
-import { readContract, waitForTransactionReceipt, watchBlocks, writeContract } from '@wagmi/core';
+import { readContract, waitForTransactionReceipt, writeContract } from '@wagmi/core';
 import { motion } from 'framer-motion';
 import useSound from "use-sound";
 import { Address } from "viem";
@@ -146,11 +146,8 @@ export default function TicTacToeOnChain() {
                 lastMoveAt: BigInt(result[8]),
             };
 
-            console.log('afs 1');
-
 
             if (mappedGame.winner !== ZERO_ADDRESS) {
-                console.log('afs 2');
                 var textShow = '';
 
                 if (mappedGame.winner === address) {
@@ -167,13 +164,11 @@ export default function TicTacToeOnChain() {
                 showToast(textShow);
             }
             else if (mappedGame.state === 2) {
-                console.log('afs 3');
                 showToast("Draw game!!!")
                 playLoss();
                 setCurrentGame(null);
             }
             else {
-                console.log('afs 4');
                 setCurrentGame(mappedGame);
             }
 
@@ -347,6 +342,9 @@ export default function TicTacToeOnChain() {
         return false;
     };
 
+    /* ----------------------------------------
+     * WATCH BLOCKS → auto refresh
+     ---------------------------------------- */
     useEffect(() => {
         const unwatch = watchBlocks(wagmiAdapter.wagmiConfig, {
             blockTag: 'latest',

@@ -125,8 +125,7 @@ export default function TicTacToeOnChain() {
         }
     };
 
-    const fetchGameById = async (gameId: number | null): Promise<bigint | undefined> => {
-        console.log(gameId)
+    const fetchGameById = async (gameId: number): Promise<bigint | undefined> => {
         try {
             const result: any = await readContract(wagmiAdapter.wagmiConfig, {
                 abi: savvyTicTacToeABI,
@@ -357,7 +356,7 @@ export default function TicTacToeOnChain() {
                 // the active game if there's one running, and the game board state.
                 refetchGames();
                 refetch();
-                fetchGameById(currentGameId)
+                if (currentGameId) fetchGameById(currentGameId)
             },
             onError(error) { },
         });

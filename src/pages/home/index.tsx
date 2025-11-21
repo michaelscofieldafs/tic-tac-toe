@@ -7,7 +7,7 @@ import {
 
 import { parseUnits } from "viem/utils";
 
-import { readContract, waitForTransactionReceipt, writeContract } from '@wagmi/core';
+import { readContract, waitForTransactionReceipt, watchBlocks, writeContract } from '@wagmi/core';
 import { motion } from 'framer-motion';
 import useSound from "use-sound";
 import { Address } from "viem";
@@ -349,7 +349,7 @@ export default function TicTacToeOnChain() {
         const unwatch = watchBlocks(wagmiAdapter.wagmiConfig, {
             blockTag: 'latest',
             pollingInterval: 1000,
-            onBlock({ number }) {
+            onBlock({ number }: any) {
                 console.log(number);
                 // Refresh available games list, the player's current status (host/challenger),
                 // the active game if there's one running, and the game board state.
@@ -357,7 +357,6 @@ export default function TicTacToeOnChain() {
                 refetch();
                 if (currentGameId) fetchGameById(currentGameId)
             },
-            onError(error) { },
         });
         return () => unwatch();
     }, []);

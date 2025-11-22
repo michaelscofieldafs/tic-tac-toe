@@ -14,13 +14,14 @@ export const usePlayerGameStatus = ({ playerAddress }: PlayerGameStatusProps) =>
     const [statusType, setStatusType] = useState<PlayerGameStatus>(PlayerGameStatus.None);
     const [currentGameId, setCurrentGameId] = useState<number | null>(null);
 
-    const fetchStatus = async () => {
+    const fetchStatus = async (addr: string) => {
+        console.log('afsss ' + addr);
         try {
             const pendingGame: any = await readContract(wagmiAdapter.wagmiConfig, {
                 abi: savvyTicTacToeABI,
                 address: SAVVY_TICTACTOE_ADDRESS,
                 functionName: 'getPendingGameByHost',
-                args: [playerAddress],
+                args: [addr],
             });
 
 
@@ -59,7 +60,9 @@ export const usePlayerGameStatus = ({ playerAddress }: PlayerGameStatusProps) =>
     useEffect(() => {
         if (!playerAddress) return;
 
-        fetchStatus();
+        console.log(playerAddress)
+
+        fetchStatus(playerAddress);
     }, [playerAddress]);
 
     return { statusText, currentGameId, refetch: fetchStatus, statusType };

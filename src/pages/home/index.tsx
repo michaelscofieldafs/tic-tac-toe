@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
     useAccount,
-    useReadContract,
-    useWatchBlocks
+    useReadContract
 } from "wagmi";
 
 import { parseUnits } from "viem/utils";
@@ -11,6 +10,7 @@ import { readContract, waitForTransactionReceipt, watchBlocks, writeContract } f
 import { motion } from 'framer-motion';
 import useSound from "use-sound";
 import { Address } from "viem";
+import DotGrid from "../../components/DotGrid";
 import WalletButton from "../../components/WalletButton";
 import { wagmiAdapter } from "../../components/Web3Provider";
 import savvyTicTacToeABI from "../../contracts/savvyTicTacToeABI.json";
@@ -24,8 +24,6 @@ import { DECIMALS, ZERO_ADDRESS } from "../../utils/constants";
 import { shortenAddress, showToast, weiToEth } from "../../utils/helpers";
 import { GameTimerText } from "./components/gameTimerText";
 import { LINES } from "./consts/boardLines";
-import DotGrid from "../../components/DotGrid";
-import ElectricBorder from "../../components/ElectricBorder";
 
 const timeoutSeconds = 3600;
 
@@ -37,6 +35,7 @@ export default function TicTacToeOnChain() {
     const [gameIdInput, setGameIdInput] = useState('');
     const [isLoadingMove, setIsLoadingMove] = useState(false);
     const [isLoadingCancelGame, setIsLoadingCancelGame] = useState(false);
+    const [fee, setFee] = useState(0);
 
     // HOOKS
     const { address, isConnected } = useAccount();
@@ -44,6 +43,7 @@ export default function TicTacToeOnChain() {
     const { minutes, seconds, expired } = useTimeUntilCancel({ lastMoveAt: currentGame?.lastMoveAt, timeoutSeconds: timeoutSeconds });
 
     const currentGameIdRef = useRef(currentGameId);
+    const currentAddressRef = useRef(address);
 
     // GAME SOUNDS
     // start sound
@@ -64,7 +64,7 @@ export default function TicTacToeOnChain() {
         address: SAVVY_TICTACTOE_ADDRESS,
         abi: savvyTicTacToeABI,
         functionName: "listAvailableGames",
-        args: [address],
+        args: [currentAddressRef.current!],
     }) as any;
 
     const {
@@ -77,7 +77,7 @@ export default function TicTacToeOnChain() {
         args: currentGameId !== null ? [currentGameId] : undefined,
         query: {
             enabled: currentGameId !== null,
-            refetchInterval: 2000,
+            refetchInterval: 4000,
         },
     }) as any;
 
@@ -119,6 +119,7 @@ export default function TicTacToeOnChain() {
             if (receipt.status === "success") {
                 showToast("Game created successfully!")
                 setStakeInput('');
+                refetch(address!);
             }
             else {
                 showToast("Error creating the game. Please try again!")
@@ -153,7 +154,7 @@ export default function TicTacToeOnChain() {
             if (mappedGame.winner !== ZERO_ADDRESS) {
                 var textShow = '';
 
-                if (mappedGame.winner === address) {
+                if (mappedGame.winner === currentAddressRef.current!) {
                     textShow = 'You win!!!'
                     playWin();
                 }
@@ -200,7 +201,7 @@ export default function TicTacToeOnChain() {
             const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
             if (receipt.status === "success") {
                 showToast("Game canceled successfully!")
-                refetch();
+                refetch(address!);
             } else {
                 showToast("Error cancelling the game!");
             }
@@ -229,7 +230,7 @@ export default function TicTacToeOnChain() {
             const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
             if (receipt.status === "success") {
                 showToast("Game canceled successfully!")
-                refetch();
+                refetch(address!);
             } else {
                 showToast("Error cancelling the game!");
             }
@@ -264,7 +265,7 @@ export default function TicTacToeOnChain() {
             if (receipt.status === 'success') {
                 setGameIdInput('');
                 refetchGames();
-                refetch();
+                refetch(address!);
                 refetchBoard();
             }
             else {
@@ -291,7 +292,7 @@ export default function TicTacToeOnChain() {
 
         if (receipt.status === 'success') {
             refetchGames();
-            refetch();
+            refetch(address!);
             refetchBoard();
         }
         else {
@@ -316,9 +317,10 @@ export default function TicTacToeOnChain() {
             const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash })
 
             if (receipt.status === 'success') {
-                playMove();
-                refetch();
+                await refetchBoard();
+                refetch(address!);
                 fetchGameById(gameId);
+                playMove();
             }
             else {
                 showToast("Error making the move, please try again!");
@@ -332,10 +334,31 @@ export default function TicTacToeOnChain() {
         }
     };
 
+    const fetchFeeInfo = async (): Promise<{
+        feeBP: number;
+        feeReceiver: string;
+    } | undefined> => {
+        try {
+            const result: any = await readContract(wagmiAdapter.wagmiConfig, {
+                abi: savvyTicTacToeABI,
+                address: SAVVY_TICTACTOE_ADDRESS,
+                functionName: "feeBP",
+                args: [],
+            });
+
+            const feeBP = Number(result);
+
+            setFee(feeBP / 100)
+        } catch (err: any) {
+            console.error("Error fetching fee info:", err);
+            return undefined;
+        }
+    };
+
     const isMyTurn = (): boolean => {
         if (!currentGame) return false;
 
-        const me = address?.toLowerCase();
+        const me = currentAddressRef.current!?.toLowerCase();
         const host = currentGame.host.toLowerCase();
         const challenger = currentGame.challenger?.toLowerCase();
 
@@ -345,22 +368,27 @@ export default function TicTacToeOnChain() {
         return false;
     };
 
+    useEffect(() => {
+        currentAddressRef.current = address;
+    }, [address]);
+
     /* ----------------------------------------
      * WATCH BLOCKS → auto refresh
      ---------------------------------------- */
     useEffect(() => {
         refetchGames();
-        refetch();
+        refetch(currentAddressRef.current!);
+        fetchFeeInfo();
         const unwatch = watchBlocks(wagmiAdapter.wagmiConfig, {
             blockTag: 'latest',
-            pollingInterval: 1000,
+            pollingInterval: 4000,
             onBlock({ number }: any) {
                 // Refresh available games list, the player's current status (host/challenger),
                 // the active game if there's one running, and the game board state.
                 refetchGames();
-                refetch();
+                refetch(currentAddressRef.current!);
                 const id = currentGameIdRef.current;
-                if (id) fetchGameById(id);
+                if (id !== null) fetchGameById(id);
             },
         });
         return () => unwatch();
@@ -411,213 +439,217 @@ export default function TicTacToeOnChain() {
                 }}
             />
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-slate-900 via-[#041726] to-[#052b2b] p-6">
-                <ElectricBorder speed={0.4}>
-                    <div className="w-full max-w-4xl bg-[rgba(255,255,255,0.03)] border border-slate-700 rounded-3xl shadow-xl p-6 backdrop-blur-md">
-                        <header className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-4">
-                                <img
-                                    src="/assets/images/logo.png"
-                                    alt="Logo"
-                                    className="w-24 object-contain"
-                                />
-                                <div>
-                                    <h1 className="text-white text-xl font-semibold">SavvyGirl Tic‑Tac‑Toe</h1>
-                                    <p className="text-slate-300 text-sm">Play and relax wity SavvyGirl ✨</p>
-                                </div>
+                <div className="w-full max-w-4xl bg-[rgba(255,255,255,0.03)] border border-slate-700 rounded-3xl shadow-xl p-6 backdrop-blur-md">
+                    <header className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                            <img
+                                src="/assets/images/logo.png"
+                                alt="Logo"
+                                className="w-24 object-contain"
+                            />
+                            <div>
+                                <h1 className="text-white text-xl font-semibold">SavvyGirl Tic‑Tac‑Toe</h1>
+                                <p className="text-slate-300 text-sm">Play and relax wity SavvyGirl ✨</p>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <WalletButton />
-                            </div>
-                        </header>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <WalletButton />
+                        </div>
+                    </header>
 
-                        <main className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                            {/* Board */}
-                            <section className="col-span-1 md:col-span-2">
-                                <div className="mx-auto w-[min(420px,90vw)]">
-                                    <div className="flex justify-center items-center h-full">
-                                        <div className="mb-2 text-sm text-slate-300 font-semibold text-center">
-                                            {statusText}
-                                        </div>
+                    <main className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                        {/* Board */}
+                        <section className="col-span-1 md:col-span-2">
+                            <div className="mx-auto w-[min(420px,90vw)]">
+                                <div className="flex justify-center items-center h-full">
+                                    <div className="mb-2 text-sm text-slate-300 font-semibold text-center">
+                                        {statusText}
                                     </div>
-                                    <div className="grid grid-cols-3 gap-4 p-6 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)] rounded-2xl border border-slate-700">
-                                        {board.map((cell, i) => {
-                                            const isWinning = winnerInfo && winnerInfo.line.includes(i);
-                                            return (
-                                                <motion.button
-                                                    key={i}
-                                                    onClick={() => handleMakeMove(currentGameId!, i)}
-                                                    initial={{ opacity: 0, scale: 0.9 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    whileTap={{ scale: 0.96 }}
-                                                    disabled={!isMyTurn() || isLoadingMove}
-                                                    className={`
+                                </div>
+                                <div className="grid grid-cols-3 gap-4 p-6 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)] rounded-2xl border border-slate-700">
+                                    {board.map((cell, i) => {
+                                        const isWinning = winnerInfo && winnerInfo.line.includes(i);
+                                        return (
+                                            <motion.button
+                                                key={i}
+                                                onClick={() => handleMakeMove(currentGameId!, i)}
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                whileTap={{ scale: 0.96 }}
+                                                disabled={!isMyTurn() || isLoadingMove || currentGame?.state !== GameState.InProgress}
+                                                className={`
     aspect-square rounded-lg flex items-center justify-center text-4xl font-extrabold select-none transition-shadow
     ${isWinning
-                                                            ? 'bg-gradient-to-br from-yellow-400 to-orange-400 text-slate-900 shadow-[0_10px_30px_rgba(255,165,0,0.12)]'
-                                                            : `${!isMyTurn() || isLoadingMove
-                                                                ? 'cursor-not-allowed hover:bg-red-500/10 hover:shadow-[0_0_15px_rgba(255,0,0,0.25)]'
-                                                                : 'cursor-pointer hover:bg-white/5'
-                                                            } bg-[rgba(255,255,255,0.01)] text-white`
-                                                        }
+                                                        ? 'bg-gradient-to-br from-yellow-400 to-orange-400 text-slate-900 shadow-[0_10px_30px_rgba(255,165,0,0.12)]'
+                                                        : `${!isMyTurn() || isLoadingMove || currentGame?.state !== GameState.InProgress
+                                                            ? 'cursor-not-allowed hover:bg-red-500/10 hover:shadow-[0_0_15px_rgba(255,0,0,0.25)]'
+                                                            : 'cursor-pointer hover:bg-white/5'
+                                                        } bg-[rgba(255,255,255,0.01)] text-white`
+                                                    }
 `}
-                                                >
-                                                    <span className="pointer-events-none">
-                                                        {cell === 'X' ? (
-                                                            <svg viewBox="0 0 48 48" width="56" height="56" className="block">
-                                                                <path d="M8 8L40 40M40 8L8 40" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-                                                            </svg>
-                                                        ) : cell === 'O' ? (
-                                                            <svg viewBox="0 0 48 48" width="56" height="56" className="block">
-                                                                <circle cx="24" cy="24" r="14" stroke="currentColor" strokeWidth="3.5" fill="none" />
-                                                            </svg>
-                                                        ) : (
-                                                            <div className="text-slate-500 text-sm">&nbsp;</div>
-                                                        )}
-                                                    </span>
-                                                </motion.button>
-                                            );
-                                        })}
-                                    </div>
-                                    {currentGame?.state === GameState.InProgress &&
-                                        <div className="mt-4 flex items-center justify-between text-sm text-slate-300">
-                                            <div>Turn: <span className="font-semibold text-white">
-                                                {!isMyTurn()
-                                                    ? "Opponent's turn"
-                                                    : "Your turn"}
-                                            </span></div>
-                                            <div className="text-right">
-                                                {winnerInfo ? (
-                                                    winnerInfo.winner === 'draw' ? (
-                                                        <span className="font-semibold">It's a draw</span>
+                                            >
+                                                <span className="pointer-events-none">
+                                                    {cell === 'X' ? (
+                                                        <svg viewBox="0 0 48 48" width="56" height="56" className="block">
+                                                            <path d="M8 8L40 40M40 8L8 40" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                                                        </svg>
+                                                    ) : cell === 'O' ? (
+                                                        <svg viewBox="0 0 48 48" width="56" height="56" className="block">
+                                                            <circle cx="24" cy="24" r="14" stroke="currentColor" strokeWidth="3.5" fill="none" />
+                                                        </svg>
                                                     ) : (
-                                                        <span className="font-semibold">Winner: {winnerInfo.winner}</span>
-                                                    )
+                                                        <div className="text-slate-500 text-sm">&nbsp;</div>
+                                                    )}
+                                                </span>
+                                            </motion.button>
+                                        );
+                                    })}
+                                </div>
+                                {currentGame?.state === GameState.InProgress &&
+                                    <div className="mt-4 flex items-center justify-between text-sm text-slate-300">
+                                        <div>Turn: <span className="font-semibold text-white">
+                                            {!isMyTurn()
+                                                ? "Opponent's turn"
+                                                : "Your turn"}
+                                        </span></div>
+                                        <div className="text-right">
+                                            {winnerInfo ? (
+                                                winnerInfo.winner === 'draw' ? (
+                                                    <span className="font-semibold">It's a draw</span>
                                                 ) : (
-                                                    <span>In play</span>
-                                                )}
-                                            </div>
+                                                    <span className="font-semibold">Winner: {winnerInfo.winner}</span>
+                                                )
+                                            ) : (
+                                                <span>In play</span>
+                                            )}
                                         </div>
-                                    }
-                                    <div className="mt-4 text-sm text-slate-300 font-semibold">
-                                        Actions
                                     </div>
-                                    {/* Create Game */}
-                                    {statusType === PlayerGameStatus.None &&
-                                        <div className="mt-2 p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
-                                            <h3 className="text-white font-semibold mb-2">Create New Game</h3>
-                                            <div className="flex flex-wrap gap-2">
-                                                <input
-                                                    className="text-black p-2 rounded flex-1 min-w-[80px]"
-                                                    placeholder="Stake"
-                                                    value={stakeInput}
-                                                    onChange={(e) => setStakeInput(e.target.value)}
-                                                />
-                                                <button
-                                                    className="px-4 py-2 bg-green-600 rounded text-white font-semibold"
-                                                    onClick={() => handleCreateGame(stakeInput)}
-                                                >
-                                                    Create Now
-                                                </button>
-                                            </div>
-                                        </div>
-                                    }
-                                    {statusType === PlayerGameStatus.WaitingForOpponent && (currentGame?.state === GameState.InProgress || currentGame?.state === GameState.WaitingForPlayer) &&
-                                        <div className="mt-2 p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
-                                            <div className="flex justify-center">
-                                                <button
-                                                    disabled={isLoadingCancelGame}
-                                                    className={`px-4 py-2 rounded font-semibold transition-colors ${!isLoadingCancelGame
-                                                        ? 'bg-yellow-600 text-white hover:bg-yellow-500 cursor-pointer'
-                                                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                                                        }`}
-                                                    onClick={() => cancelPendingGame(currentGameId!)}
-                                                >
-                                                    CANCEL GAME
-                                                </button>
-                                            </div>
-                                        </div>
-                                    }
-                                    {statusType === PlayerGameStatus.InProgress && (currentGame?.state === GameState.InProgress || currentGame?.state === GameState.WaitingForPlayer) &&
-                                        <div className="mt-6 p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
-                                            <GameTimerText expired={expired} minutes={minutes} seconds={seconds} />
-                                            <div className="flex justify-center">
-                                                <button
-                                                    className={`px-4 py-2 rounded font-semibold transition-colors ${expired
-                                                        ? 'bg-yellow-600 text-white hover:bg-yellow-500 cursor-pointer'
-                                                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                                                        }`}
-                                                    onClick={() => expired && claimTimeoutGame(currentGameId!)}
-                                                    disabled={!expired || isLoadingCancelGame}
-                                                >
-                                                    CANCEL GAME BY TIMEOUT
-                                                </button>
-                                            </div>
-                                        </div>
-                                    }
+                                }
+                                <div className="mt-4 text-sm text-slate-300 font-semibold">
+                                    Actions
                                 </div>
-                            </section>
-                            {/* Right column: games list + tips */}
-                            <aside className="space-y-4 w-full">
-                                {statusType === PlayerGameStatus.None && <>
-                                    <div className="p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
-                                        <h3 className="text-sm text-slate-300">Games Available</h3>
-                                        {games?.length ? (
-                                            <ul className="mt-3 text-sm text-white/90 leading-6 max-h-[300px] overflow-auto space-y-4">
-                                                {games.map((g: any, idx: number) => (
-                                                    <li
-                                                        key={idx}
-                                                        className="border border-slate-300 rounded-lg p-4 flex flex-col justify-between hover:shadow-md transition cursor-pointer"
+                                {/* Create Game */}
+                                {statusType === PlayerGameStatus.None &&
+                                    <div className="mt-2 p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
+                                        <h3 className="text-white font-semibold mb-2">Create New Game</h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            <input
+                                                className="text-black p-2 rounded flex-1 min-w-[80px]"
+                                                placeholder="Stake"
+                                                value={stakeInput}
+                                                onChange={(e) => setStakeInput(e.target.value)}
+                                            />
+                                            <button
+                                                className="px-4 py-2 bg-green-600 rounded text-white font-semibold"
+                                                onClick={() => handleCreateGame(stakeInput)}
+                                            >
+                                                Create Now
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                {statusType === PlayerGameStatus.WaitingForOpponent && (currentGame?.state === GameState.InProgress || currentGame?.state === GameState.WaitingForPlayer) &&
+                                    <div className="mt-2 p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
+                                        <div className="flex justify-center">
+                                            <button
+                                                disabled={isLoadingCancelGame}
+                                                className={`px-4 py-2 rounded font-semibold transition-colors ${!isLoadingCancelGame
+                                                    ? 'bg-yellow-600 text-white hover:bg-yellow-500 cursor-pointer'
+                                                    : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                    }`}
+                                                onClick={() => cancelPendingGame(currentGameId!)}
+                                            >
+                                                CANCEL GAME
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                {statusType === PlayerGameStatus.InProgress && (currentGame?.state === GameState.InProgress || currentGame?.state === GameState.WaitingForPlayer) &&
+                                    <div className="mt-6 p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
+                                        <GameTimerText expired={expired} minutes={minutes} seconds={seconds} />
+                                        <div className="flex justify-center">
+                                            <button
+                                                className={`px-4 py-2 rounded font-semibold transition-colors ${expired
+                                                    ? 'bg-yellow-600 text-white hover:bg-yellow-500 cursor-pointer'
+                                                    : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                    }`}
+                                                onClick={() => expired && claimTimeoutGame(currentGameId!)}
+                                                disabled={!expired || isLoadingCancelGame}
+                                            >
+                                                CANCEL GAME BY TIMEOUT
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </section>
+                        {/* Right column: games list + tips */}
+                        <aside className="space-y-4 w-full">
+                            {statusType === PlayerGameStatus.None && <>
+                                <div className="p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
+                                    <h3 className="text-sm text-slate-300">Games Available</h3>
+                                    {games?.length ? (
+                                        <ul className="mt-3 text-sm text-white/90 leading-6 max-h-[300px] overflow-auto space-y-4">
+                                            {games.map((g: any, idx: number) => (
+                                                <li
+                                                    key={idx}
+                                                    className="border border-slate-300 rounded-lg p-4 flex flex-col justify-between hover:shadow-md transition cursor-pointer"
+                                                >
+                                                    <div>
+                                                        <p>Host: {shortenAddress(g.host)}</p>
+                                                        <p>
+                                                            <span className="font-medium">Stake:</span> {weiToEth(g.stake?.toString?.(), "Sonic")}
+                                                        </p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleJoinGame(g.id, g.stake)}
+                                                        className="w-full bg-blue-600 text-white px-2 py-1 rounded-md hover:bg-blue-700 transition mt-2"
                                                     >
-                                                        <div>
-                                                            <p>Host: {shortenAddress(g.host)}</p>
-                                                            <p>
-                                                                <span className="font-medium">Stake:</span> {weiToEth(g.stake?.toString?.(), "Sonic")}
-                                                            </p>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => handleJoinGame(g.id, g.stake)}
-                                                            className="w-full bg-blue-600 text-white px-2 py-1 rounded-md hover:bg-blue-700 transition mt-2"
-                                                        >
-                                                            Join
-                                                        </button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        ) : (
-                                            <p className="text-slate-400 italic mt-3">No games available yet</p>
-                                        )}
-                                    </div>
-
-                                    <div className="p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)] flex flex-col">
-                                        <h3 className="text-sm text-slate-300">Join Game</h3>
-
-                                        <input
-                                            type="number"
-                                            placeholder="Enter Game ID"
-                                            value={gameIdInput}
-                                            onChange={(e) => setGameIdInput(e.target.value)}
-                                            className="px-3 py-2 mt-4 rounded-md border border-slate-600 bg-slate-900 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-                                        />
-
-                                        <button
-                                            disabled={!gameIdInput}
-                                            onClick={handleJoinGameById}
-                                            className="w-full bg-blue-600 text-white px-2 py-1 rounded-md hover:bg-blue-700 transition mt-4 disabled:opacity-50"
-                                        >
-                                            {isConnected ? 'Join' : 'Connect wallet to join'}
-                                        </button>
-                                    </div>
-                                </>}
-                                <div className="p-4 rounded-2xl border border-slate-700 bg-gradient-to-br from-[#021e1f] to-[#062f30] shadow-inner">
-                                    <h4 className="text-white font-semibold">Tips</h4>
-                                    <p className="mt-2 text-slate-300 text-sm">Every action — creating a game, joining one, and making moves — is on-chain and requires a wallet-approved transaction. Play safely and transparently!</p>
+                                                        Join
+                                                    </button>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-slate-400 italic mt-3">No games available yet</p>
+                                    )}
                                 </div>
-                            </aside>
-                        </main>
 
-                        <footer className="mt-6 text-center text-xs text-slate-400">Developed with 💜 by SavvyGirl</footer>
-                    </div>
-                </ElectricBorder>
+                                <div className="p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)] flex flex-col">
+                                    <h3 className="text-sm text-slate-300">Join Game</h3>
+
+                                    <input
+                                        type="number"
+                                        placeholder="Enter Game ID"
+                                        value={gameIdInput}
+                                        onChange={(e) => setGameIdInput(e.target.value)}
+                                        className="px-3 py-2 mt-4 rounded-md border border-slate-600 bg-slate-900 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                                    />
+
+                                    <button
+                                        disabled={!gameIdInput}
+                                        onClick={handleJoinGameById}
+                                        className="w-full bg-blue-600 text-white px-2 py-1 rounded-md hover:bg-blue-700 transition mt-4 disabled:opacity-50"
+                                    >
+                                        {isConnected ? 'Join' : 'Connect wallet to join'}
+                                    </button>
+                                </div>
+                            </>}
+                            {fee > 0 &&
+                                <div className="p-4 rounded-2xl border border-slate-700 bg-gradient-to-br from-[#021e1f] to-[#062f30] shadow-inner">
+                                    <h4 className="text-white font-semibold">Platform Fee</h4>
+                                    <p className="mt-2 text-slate-300 text-sm">{`A fee of ${fee}% is applied only when a match concludes with a winner, and is then allocated to the platform.`}</p>
+                                </div>
+                            }
+                            <div className="p-4 rounded-2xl border border-slate-700 bg-gradient-to-br from-[#021e1f] to-[#062f30] shadow-inner">
+                                <h4 className="text-white font-semibold">Tips</h4>
+                                <p className="mt-2 text-slate-300 text-sm">Every action — creating a game, joining one, and making moves — is on-chain and requires a wallet-approved transaction. Play safely and transparently!</p>
+                            </div>
+                        </aside>
+                    </main>
+
+                    <footer className="mt-6 text-center text-xs text-slate-400">Developed with 💜 by SavvyGirl</footer>
+                </div>
             </div>
         </div>
     );

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
     useAccount,
     useReadContract,
@@ -41,6 +41,8 @@ export default function TicTacToeOnChain() {
     const { address, isConnected } = useAccount();
     const { statusText, currentGameId, refetch, statusType } = usePlayerGameStatus({ playerAddress: address ?? '' });
     const { minutes, seconds, expired } = useTimeUntilCancel({ lastMoveAt: currentGame?.lastMoveAt, timeoutSeconds: timeoutSeconds });
+
+    const currentGameIdRef = useRef(currentGameId);
 
     // GAME SOUNDS
     // start sound
@@ -346,16 +348,18 @@ export default function TicTacToeOnChain() {
      * WATCH BLOCKS → auto refresh
      ---------------------------------------- */
     useEffect(() => {
+        refetchGames();
+        refetch();
         const unwatch = watchBlocks(wagmiAdapter.wagmiConfig, {
             blockTag: 'latest',
             pollingInterval: 1000,
             onBlock({ number }: any) {
-                console.log(number);
                 // Refresh available games list, the player's current status (host/challenger),
                 // the active game if there's one running, and the game board state.
                 refetchGames();
                 refetch();
-                if (currentGameId) fetchGameById(currentGameId)
+                const id = currentGameIdRef.current;
+                if (id) fetchGameById(id);
             },
         });
         return () => unwatch();
@@ -379,8 +383,8 @@ export default function TicTacToeOnChain() {
     }, [boardRaw]);
 
     useEffect(() => {
-        refetch();
-    }, [isConnected])
+        currentGameIdRef.current = currentGameId;
+    }, [currentGameId]);
 
     /* ----------------------------------------
      * UI
@@ -472,7 +476,6 @@ export default function TicTacToeOnChain() {
                                         );
                                     })}
                                 </div>
-                                {<p>{currentGame?.turn}</p>}
                                 {currentGame?.state === GameState.InProgress &&
                                     <div className="mt-4 flex items-center justify-between text-sm text-slate-300">
                                         <div>Turn: <span className="font-semibold text-white">

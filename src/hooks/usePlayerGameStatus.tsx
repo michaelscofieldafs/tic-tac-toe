@@ -44,6 +44,7 @@ export const usePlayerGameStatus = ({ playerAddress }: PlayerGameStatusProps) =>
             if (activeGame && activeGame.id !== undefined) {
                 setStatusText('Match started!');
                 setStatusType(PlayerGameStatus.InProgress);
+                console.log(Number(activeGame.id))
                 setCurrentGameId(Number(activeGame.id));
                 return;
             }

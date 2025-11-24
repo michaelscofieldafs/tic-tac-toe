@@ -24,8 +24,11 @@ import { DECIMALS, ZERO_ADDRESS } from "../../utils/constants";
 import { shortenAddress, showToast, weiToEth } from "../../utils/helpers";
 import { GameTimerText } from "./components/gameTimerText";
 import { LINES } from "./consts/boardLines";
+import { useSearchParams } from "react-router-dom";
+import Modal, { ModalProps } from "../../components/Modal";
+import { GameInfo } from "../../interfaces/gameInfo";
 
-const timeoutSeconds = 3600;
+const timeoutSeconds = 300;
 
 export default function TicTacToeOnChain() {
     // STATES
@@ -44,6 +47,11 @@ export default function TicTacToeOnChain() {
 
     const currentGameIdRef = useRef(currentGameId);
     const currentAddressRef = useRef(address);
+
+    const [searchParams] = useSearchParams();
+    const urlGameId = searchParams.get("gameId");
+
+    const [showModal, setShowModal] = useState<ModalProps | null>(null);
 
     // GAME SOUNDS
     // start sound
@@ -77,7 +85,7 @@ export default function TicTacToeOnChain() {
         args: currentGameId !== null ? [currentGameId] : undefined,
         query: {
             enabled: currentGameId !== null,
-            refetchInterval: 4000,
+            refetchInterval: 2000,
         },
     }) as any;
 
@@ -106,27 +114,39 @@ export default function TicTacToeOnChain() {
 
         const stake = parseUnits(stakeHuman, DECIMALS);
 
-        try {
-            let txHash = await writeContract(wagmiAdapter.wagmiConfig, {
-                abi: savvyTicTacToeABI,
-                address: SAVVY_TICTACTOE_ADDRESS as Address,
-                functionName: "createGame",
-                args: [ZERO_ADDRESS, stake],
-                value: stake,
-            });
+        const showModalInfo: ModalProps = {
+            title: 'Create new game',
+            description: `Do you want to create a new game with a stake of ${stakeHuman} Sonic`,
+            handleOpen: () => {
+                setShowModal(null);
+            },
+            open: true,
+            callback: async () => {
+                try {
+                    let txHash = await writeContract(wagmiAdapter.wagmiConfig, {
+                        abi: savvyTicTacToeABI,
+                        address: SAVVY_TICTACTOE_ADDRESS as Address,
+                        functionName: "createGame",
+                        args: [ZERO_ADDRESS, stake],
+                        value: stake,
+                    });
 
-            const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash: txHash });
-            if (receipt.status === "success") {
-                showToast("Game created successfully!")
-                setStakeInput('');
-                refetch(address!);
+                    const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash: txHash });
+                    if (receipt.status === "success") {
+                        showToast("Game created successfully!")
+                        setStakeInput('');
+                        refetch(address!);
+                    }
+                    else {
+                        showToast("Error creating the game. Please try again!")
+                    }
+                } catch (err: any) {
+                    showToast("Error creating the game. Please try again!")
+                }
             }
-            else {
-                showToast("Error creating the game. Please try again!")
-            }
-        } catch (err: any) {
-            showToast("Error creating the game. Please try again!")
         }
+
+        setShowModal(showModalInfo);
     };
 
     const fetchGameById = async (gameId: number): Promise<bigint | undefined> => {
@@ -165,12 +185,31 @@ export default function TicTacToeOnChain() {
 
                 setCurrentGame(null);
 
-                showToast(textShow);
+                const showModalInfo: ModalProps = {
+                    title: 'Game result',
+                    description: textShow,
+                    handleOpen: () => {
+                        setShowModal(null);
+                    },
+                    open: true,
+                };
+
+                setShowModal(showModalInfo);
             }
             else if (mappedGame.state === 2) {
-                showToast("Draw game!!!")
                 playLoss();
                 setCurrentGame(null);
+
+                const showModalInfo: ModalProps = {
+                    title: 'Game result',
+                    description: 'Draw game!!!',
+                    handleOpen: () => {
+                        setShowModal(null);
+                    },
+                    open: true,
+                };
+
+                setShowModal(showModalInfo);
             }
             else {
                 setCurrentGame(mappedGame);
@@ -184,61 +223,157 @@ export default function TicTacToeOnChain() {
         }
     };
 
+    const fetchStatusGameById = async (gameId: number): Promise<GameInfo | undefined> => {
+        try {
+            const result: any = await readContract(wagmiAdapter.wagmiConfig, {
+                abi: savvyTicTacToeABI,
+                address: SAVVY_TICTACTOE_ADDRESS,
+                functionName: "getGame",
+                args: [gameId],
+            });
+
+            const gameInfo: GameInfo = {
+                id: gameId,
+                host: result[0],
+                challenger: result[1],
+                token: result[2],
+                stake: BigInt(result[3]),
+                state: Number(result[5]),
+            };
+
+
+            if (gameInfo.state === GameState.WaitingForPlayer) {
+                return gameInfo;
+            }
+        } catch (err: any) {
+            console.error(err);
+        } finally {
+        }
+    };
+
+
     /** ===============================================
      * Claim cancel pending game
      ================================================ */
     const cancelPendingGame = async (gameId: number): Promise<void> => {
-        try {
-            setIsLoadingCancelGame(true);
+        const showModalInfo: ModalProps = {
+            title: 'Cancel pending game',
+            description: `Do you want to cancel pendind game?`,
+            handleOpen: () => {
+                setShowModal(null);
+            },
+            open: true,
+            callback: async () => {
+                try {
+                    setIsLoadingCancelGame(true);
 
-            const hash = await writeContract(wagmiAdapter.wagmiConfig, {
-                abi: savvyTicTacToeABI,
-                address: SAVVY_TICTACTOE_ADDRESS,
-                functionName: "cancelGame",
-                args: [gameId],
-            });
+                    const hash = await writeContract(wagmiAdapter.wagmiConfig, {
+                        abi: savvyTicTacToeABI,
+                        address: SAVVY_TICTACTOE_ADDRESS,
+                        functionName: "cancelGame",
+                        args: [gameId],
+                    });
 
-            const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
-            if (receipt.status === "success") {
-                showToast("Game canceled successfully!")
-                refetch(address!);
-            } else {
-                showToast("Error cancelling the game!");
+                    const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
+                    if (receipt.status === "success") {
+                        showToast("Game canceled successfully!")
+                        refetch(address!);
+                    } else {
+                        showToast("Error cancelling the game!");
+                    }
+                } catch (err: any) {
+                    showToast("Error cancelling the game!");
+                }
+                finally {
+                    setIsLoadingCancelGame(false);
+                }
             }
-        } catch (err: any) {
-            showToast("Error cancelling the game!");
-        }
-        finally {
-            setIsLoadingCancelGame(false);
-        }
+        };
+
+        setShowModal(showModalInfo);
     };
 
     /** ===============================================
      * Claim timeout
      ================================================ */
     const claimTimeoutGame = async (gameId: number): Promise<void> => {
-        try {
-            setIsLoadingCancelGame(true);
+        const showModalInfo: ModalProps = {
+            title: 'Cancel game by timeout',
+            description: `Do you want cancel game by timeout?`,
+            handleOpen: () => {
+                setShowModal(null);
+            },
+            open: true,
+            callback: async () => {
+                try {
+                    setIsLoadingCancelGame(true);
 
-            const hash = await writeContract(wagmiAdapter.wagmiConfig, {
-                abi: savvyTicTacToeABI,
-                address: SAVVY_TICTACTOE_ADDRESS,
-                functionName: "claimTimeout",
-                args: [gameId],
-            });
+                    const hash = await writeContract(wagmiAdapter.wagmiConfig, {
+                        abi: savvyTicTacToeABI,
+                        address: SAVVY_TICTACTOE_ADDRESS,
+                        functionName: "claimTimeout",
+                        args: [gameId],
+                    });
 
-            const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
-            if (receipt.status === "success") {
-                showToast("Game canceled successfully!")
-                refetch(address!);
-            } else {
-                showToast("Error cancelling the game!");
+                    const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
+                    if (receipt.status === "success") {
+                        showToast("Game canceled successfully!")
+                        refetch(address!);
+                    } else {
+                        showToast("Error cancelling the game!");
+                    }
+                } catch (err: any) {
+                    showToast("Error cancelling the game!");
+                }
+                finally {
+                    setIsLoadingCancelGame(false);
+                }
             }
-        } catch (err: any) {
-            showToast("Error cancelling the game!");
+        };
+
+        setShowModal(showModalInfo);
+    };
+
+    /** JOIN GAME BY ID UR **/
+    const handleJoinGameUrlById = async (gameId: number): Promise<void> => {
+        const gameInfo = await fetchStatusGameById(gameId);
+
+        if (gameInfo) {
+            const showModalInfo: ModalProps = {
+                title: 'Join game',
+                description: `Would you like to join the selected match with the stake of ${weiToEth(gameInfo.stake!.toString?.(), "Sonic")}?`,
+                handleOpen: () => {
+                    setShowModal(null);
+                },
+                open: true,
+                callback: async () => {
+                    const hash = await writeContract(wagmiAdapter.wagmiConfig, {
+                        abi: savvyTicTacToeABI,
+                        address: SAVVY_TICTACTOE_ADDRESS as Address,
+                        functionName: 'joinGame',
+                        args: [gameId],
+                        value: gameInfo.stake,
+                    });
+
+
+                    const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash })
+
+                    if (receipt.status === 'success') {
+                        setGameIdInput('');
+                        refetchGames();
+                        refetch(address!);
+                        refetchBoard();
+                    }
+                    else {
+                        showToast("Error joining the game");
+                    }
+                }
+            }
+
+            setShowModal(showModalInfo);
         }
-        finally {
-            setIsLoadingCancelGame(false);
+        else {
+            showToast("Game not found");
         }
     };
 
@@ -248,29 +383,42 @@ export default function TicTacToeOnChain() {
             showToast("Enter the game ID to join the match");
             return;
         }
-        const stake = await fetchGameById(Number(gameIdInput));
 
-        if (stake) {
-            const hash = await writeContract(wagmiAdapter.wagmiConfig, {
-                abi: savvyTicTacToeABI,
-                address: SAVVY_TICTACTOE_ADDRESS as Address,
-                functionName: 'joinGame',
-                args: [gameIdInput],
-                value: stake,
-            });
+        const gameInfo = await fetchStatusGameById(Number(gameIdInput));
+
+        if (gameInfo) {
+            const showModalInfo: ModalProps = {
+                title: 'Join game',
+                description: `Would you like to join the selected match with the stake of ${weiToEth(gameInfo.stake!.toString?.(), "Sonic")}?`,
+                handleOpen: () => {
+                    setShowModal(null);
+                },
+                open: true,
+                callback: async () => {
+                    const hash = await writeContract(wagmiAdapter.wagmiConfig, {
+                        abi: savvyTicTacToeABI,
+                        address: SAVVY_TICTACTOE_ADDRESS as Address,
+                        functionName: 'joinGame',
+                        args: [gameIdInput],
+                        value: gameInfo.stake,
+                    });
 
 
-            const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash })
+                    const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash })
 
-            if (receipt.status === 'success') {
-                setGameIdInput('');
-                refetchGames();
-                refetch(address!);
-                refetchBoard();
+                    if (receipt.status === 'success') {
+                        setGameIdInput('');
+                        refetchGames();
+                        refetch(address!);
+                        refetchBoard();
+                    }
+                    else {
+                        showToast("Error joining the game");
+                    }
+                }
             }
-            else {
-                showToast("Error joining the game");
-            }
+
+            setShowModal(showModalInfo);
         }
         else {
             showToast("Game not found");
@@ -279,25 +427,37 @@ export default function TicTacToeOnChain() {
 
     /** JOIN GAME **/
     const handleJoinGame = async (gameId: number, stake: any): Promise<void> => {
-        const hash = await writeContract(wagmiAdapter.wagmiConfig, {
-            abi: savvyTicTacToeABI,
-            address: SAVVY_TICTACTOE_ADDRESS as Address,
-            functionName: 'joinGame',
-            args: [gameId],
-            value: stake.toString(),
-        });
+        const showModalInfo: ModalProps = {
+            title: 'Join game',
+            description: `Would you like to join the selected match with the stake of ${weiToEth(stake.toString?.(), "Sonic")}?`,
+            handleOpen: () => {
+                setShowModal(null);
+            },
+            open: true,
+            callback: async () => {
+                const hash = await writeContract(wagmiAdapter.wagmiConfig, {
+                    abi: savvyTicTacToeABI,
+                    address: SAVVY_TICTACTOE_ADDRESS as Address,
+                    functionName: 'joinGame',
+                    args: [gameId],
+                    value: stake.toString(),
+                });
 
 
-        const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash })
+                const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash })
 
-        if (receipt.status === 'success') {
-            refetchGames();
-            refetch(address!);
-            refetchBoard();
+                if (receipt.status === 'success') {
+                    refetchGames();
+                    refetch(address!);
+                    refetchBoard();
+                }
+                else {
+                    showToast("Error joining the game");
+                }
+            }
         }
-        else {
-            showToast("Error joining the game");
-        }
+
+        setShowModal(showModalInfo);
     };
 
     /** MAKE MOVE **/
@@ -381,7 +541,7 @@ export default function TicTacToeOnChain() {
         fetchFeeInfo();
         const unwatch = watchBlocks(wagmiAdapter.wagmiConfig, {
             blockTag: 'latest',
-            pollingInterval: 4000,
+            pollingInterval: 2000,
             onBlock({ number }: any) {
                 // Refresh available games list, the player's current status (host/challenger),
                 // the active game if there's one running, and the game board state.
@@ -412,6 +572,15 @@ export default function TicTacToeOnChain() {
     }, [boardRaw]);
 
     useEffect(() => {
+        if (!urlGameId) return;
+
+        const idNum = Number(urlGameId);
+        if (!isNaN(idNum)) {
+            handleJoinGameUrlById(idNum);
+        }
+    }, [urlGameId]);
+
+    useEffect(() => {
         currentGameIdRef.current = currentGameId;
     }, [currentGameId]);
 
@@ -438,6 +607,8 @@ export default function TicTacToeOnChain() {
                     zIndex: 0,
                 }}
             />
+            {showModal && <Modal callback={showModal.callback} description={showModal.description} handleOpen={showModal.handleOpen} open={showModal.open}
+                title={showModal.title} />}
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-slate-900 via-[#041726] to-[#052b2b] p-6">
                 <div className="w-full max-w-4xl bg-[rgba(255,255,255,0.03)] border border-slate-700 rounded-3xl shadow-xl p-6 backdrop-blur-md">
                     <header className="flex items-center justify-between mb-6">

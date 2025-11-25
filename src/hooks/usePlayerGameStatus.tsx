@@ -26,7 +26,7 @@ export const usePlayerGameStatus = ({ playerAddress }: PlayerGameStatusProps) =>
 
 
             if (pendingGame && pendingGame.id !== undefined) {
-                setStatusText(`Game #${pendingGame.id} is waiting for an opponent… Share this ID with a friend to join!`);
+                setStatusText(`Game #${pendingGame.id} is waiting for an opponent. Share this link with a friend to join!`);
                 setStatusType(PlayerGameStatus.WaitingForOpponent);
                 setCurrentGameId(Number(pendingGame.id));
                 return;

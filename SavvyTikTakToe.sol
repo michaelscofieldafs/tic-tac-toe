@@ -20,6 +20,7 @@ contract SavvyGirlOnchainTicTacToe is ReentrancyGuard, Ownable {
     address public feeReceiver;
     uint256 public feeBP = 300;
     uint256 public constant BP_DIVISOR = 10000;
+    uint256 public maxResultsLimit = 10;
 
     struct Game {
         address host;
@@ -83,6 +84,10 @@ contract SavvyGirlOnchainTicTacToe is ReentrancyGuard, Ownable {
     function setFeeBP(uint256 _newBP) external onlyOwner {
         require(_newBP <= 2000, "max 20%");
         feeBP = _newBP;
+    }
+
+    function setMaxResultsLimit(uint256 newLimit) external onlyOwner {
+        maxResultsLimit = newLimit;
     }
 
     // Create a new game: caller is host, must approve stake beforehand.
@@ -295,7 +300,11 @@ contract SavvyGirlOnchainTicTacToe is ReentrancyGuard, Ownable {
     ) external view returns (GameInfo[] memory) {
         uint256 count = 0;
 
-        for (uint256 i = games.length; i > 0 && count < maxResults; i--) {
+        uint256 totalResults = maxResults > maxResultsLimit
+            ? maxResultsLimit
+            : maxResults;
+
+        for (uint256 i = games.length; i > 0 && count < totalResults; i--) {
             Game storage g = games[i - 1];
 
             bool isAvailable = g.challenger == address(0) &&

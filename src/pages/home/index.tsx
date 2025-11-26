@@ -7,28 +7,29 @@ import {
 
 import { parseUnits } from "viem/utils";
 
+import { useAppKitNetwork } from "@reown/appkit/react";
 import { readContract, waitForTransactionReceipt, watchBlocks, writeContract } from '@wagmi/core';
 import { motion } from 'framer-motion';
+import { useSearchParams } from "react-router-dom";
 import useSound from "use-sound";
 import { Address } from "viem";
 import DotGrid from "../../components/DotGrid";
+import ElectricBorder from "../../components/ElectricBorder";
+import Modal, { ModalProps } from "../../components/Modal";
 import WalletButton from "../../components/WalletButton";
 import { wagmiAdapter } from "../../components/Web3Provider";
 import savvyTicTacToeABI from "../../contracts/savvyTicTacToeABI.json";
-import { SAVVY_TICTACTOE_ADDRESS } from "../../contracts/savvyticTacToeAddress";
 import { GameState } from "../../enums/gameState";
 import { PlayerGameStatus } from "../../enums/playerGameStatus";
 import { usePlayerGameStatus } from "../../hooks/usePlayerGameStatus";
 import { useTimeUntilCancel } from "../../hooks/useTimeUntilCancel";
 import { Game } from "../../interfaces/game";
+import { GameInfo } from "../../interfaces/gameInfo";
 import { DECIMALS, ZERO_ADDRESS } from "../../utils/constants";
 import { shortenAddress, showToast, weiToEth } from "../../utils/helpers";
+import { getContractAddressByChainId } from "../../utils/providers/tokenAddressProvider";
 import { GameTimerText } from "./components/gameTimerText";
 import { LINES } from "./consts/boardLines";
-import { useSearchParams } from "react-router-dom";
-import Modal, { ModalProps } from "../../components/Modal";
-import { GameInfo } from "../../interfaces/gameInfo";
-import ElectricBorder from "../../components/ElectricBorder";
 
 const timeoutSeconds = 300;
 
@@ -55,6 +56,10 @@ export default function TicTacToeOnChain() {
 
     const [showModal, setShowModal] = useState<ModalProps | null>(null);
 
+    const { chainId } = useAppKitNetwork();
+
+    const currentChainRef = useRef(chainId);
+
     // GAME SOUNDS
     // start sound
     const [playMove] = useSound('/assets/sounds/game-move.mp3', { volume: 0.5 });
@@ -71,7 +76,8 @@ export default function TicTacToeOnChain() {
         data: games,
         refetch: refetchGames,
     } = useReadContract({
-        address: SAVVY_TICTACTOE_ADDRESS,
+        address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
+        chainId: Number(currentChainRef.current),
         abi: savvyTicTacToeABI,
         functionName: "listAvailableGames",
         args: [currentAddressRef.current!, 10],
@@ -81,7 +87,8 @@ export default function TicTacToeOnChain() {
         data: boardRaw,
         refetch: refetchBoard,
     } = useReadContract({
-        address: SAVVY_TICTACTOE_ADDRESS,
+        address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
+        chainId: Number(currentChainRef.current),
         abi: savvyTicTacToeABI,
         functionName: "getBoard",
         args: currentGameId !== null ? [currentGameId] : undefined,
@@ -127,7 +134,7 @@ export default function TicTacToeOnChain() {
                 try {
                     let txHash = await writeContract(wagmiAdapter.wagmiConfig, {
                         abi: savvyTicTacToeABI,
-                        address: SAVVY_TICTACTOE_ADDRESS as Address,
+                        address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                         functionName: "createGame",
                         args: [ZERO_ADDRESS, stake],
                         value: stake,
@@ -155,7 +162,7 @@ export default function TicTacToeOnChain() {
         try {
             const result: any = await readContract(wagmiAdapter.wagmiConfig, {
                 abi: savvyTicTacToeABI,
-                address: SAVVY_TICTACTOE_ADDRESS,
+                address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                 functionName: "getGame",
                 args: [gameId],
             });
@@ -229,7 +236,7 @@ export default function TicTacToeOnChain() {
         try {
             const result: any = await readContract(wagmiAdapter.wagmiConfig, {
                 abi: savvyTicTacToeABI,
-                address: SAVVY_TICTACTOE_ADDRESS,
+                address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                 functionName: "getGame",
                 args: [gameId],
             });
@@ -270,7 +277,7 @@ export default function TicTacToeOnChain() {
 
                     const hash = await writeContract(wagmiAdapter.wagmiConfig, {
                         abi: savvyTicTacToeABI,
-                        address: SAVVY_TICTACTOE_ADDRESS,
+                        address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                         functionName: "forfeitGame",
                         args: [gameId],
                     });
@@ -312,7 +319,7 @@ export default function TicTacToeOnChain() {
 
                     const hash = await writeContract(wagmiAdapter.wagmiConfig, {
                         abi: savvyTicTacToeABI,
-                        address: SAVVY_TICTACTOE_ADDRESS,
+                        address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                         functionName: "cancelGame",
                         args: [gameId],
                     });
@@ -353,7 +360,7 @@ export default function TicTacToeOnChain() {
 
                     const hash = await writeContract(wagmiAdapter.wagmiConfig, {
                         abi: savvyTicTacToeABI,
-                        address: SAVVY_TICTACTOE_ADDRESS,
+                        address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                         functionName: "claimTimeout",
                         args: [gameId],
                     });
@@ -397,7 +404,7 @@ export default function TicTacToeOnChain() {
                 callback: async () => {
                     const hash = await writeContract(wagmiAdapter.wagmiConfig, {
                         abi: savvyTicTacToeABI,
-                        address: SAVVY_TICTACTOE_ADDRESS as Address,
+                        address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                         functionName: 'joinGame',
                         args: [gameId],
                         value: gameInfo.stake,
@@ -450,7 +457,7 @@ export default function TicTacToeOnChain() {
                 callback: async () => {
                     const hash = await writeContract(wagmiAdapter.wagmiConfig, {
                         abi: savvyTicTacToeABI,
-                        address: SAVVY_TICTACTOE_ADDRESS as Address,
+                        address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                         functionName: 'joinGame',
                         args: [gameIdInput],
                         value: gameInfo.stake,
@@ -490,7 +497,7 @@ export default function TicTacToeOnChain() {
             callback: async () => {
                 const hash = await writeContract(wagmiAdapter.wagmiConfig, {
                     abi: savvyTicTacToeABI,
-                    address: SAVVY_TICTACTOE_ADDRESS as Address,
+                    address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                     functionName: 'joinGame',
                     args: [gameId],
                     value: stake.toString(),
@@ -522,7 +529,7 @@ export default function TicTacToeOnChain() {
 
             const hash = await writeContract(wagmiAdapter.wagmiConfig, {
                 abi: savvyTicTacToeABI,
-                address: SAVVY_TICTACTOE_ADDRESS as Address,
+                address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                 functionName: 'makeMove',
                 args: [gameId, idx],
             })
@@ -530,10 +537,10 @@ export default function TicTacToeOnChain() {
             const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash })
 
             if (receipt.status === 'success') {
-                await refetchBoard();
+                playMove();
+                refetchBoard();
                 refetch(address!);
                 fetchGameById(gameId);
-                playMove();
             }
             else {
                 showToast("Error making the move, please try again!", "error");
@@ -554,7 +561,7 @@ export default function TicTacToeOnChain() {
         try {
             const result: any = await readContract(wagmiAdapter.wagmiConfig, {
                 abi: savvyTicTacToeABI,
-                address: SAVVY_TICTACTOE_ADDRESS,
+                address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                 functionName: "feeBP",
                 args: [],
             });
@@ -569,16 +576,17 @@ export default function TicTacToeOnChain() {
     };
 
     const handleContractLink = () => {
-        const url = `https://blaze.soniclabs.com/address/0x0c72bbc613720683f1b2950291d14d972103979d`;
+        const url = chainId === 57_054 ? `https://blaze.soniclabs.com/address/${getContractAddressByChainId(Number(currentChainRef.current))}` : `https://testnet.sonicscan.org/address/${getContractAddressByChainId(Number(currentChainRef.current))}`;
 
         window.open(url, '_blank');
     }
 
     const handleLink = () => {
-        const url = `http://localhost:3000/?gameId=${currentGameId}`;
+        const baseUrl = window.location.origin;
+        const url = `${baseUrl}/?gameId=${currentGameId}`;
 
         navigator.clipboard.writeText(url);
-        showToast('Copied link');
+        showToast('Copied game link');
     }
 
     const getMyPiece = (): string => {
@@ -606,6 +614,10 @@ export default function TicTacToeOnChain() {
     };
 
     useEffect(() => {
+        currentChainRef.current = chainId;
+    }, [chainId])
+
+    useEffect(() => {
         currentAddressRef.current = address;
     }, [address]);
 
@@ -618,6 +630,7 @@ export default function TicTacToeOnChain() {
         fetchFeeInfo();
         const unwatch = watchBlocks(wagmiAdapter.wagmiConfig, {
             blockTag: 'latest',
+            chainId: Number(currentChainRef.current),
             pollingInterval: 2000,
             onBlock({ number }: any) {
                 // Refresh available games list, the player's current status (host/challenger),
@@ -687,12 +700,12 @@ export default function TicTacToeOnChain() {
             {showModal && <Modal callback={showModal.callback} description={showModal.description} handleOpen={showModal.handleOpen} open={showModal.open}
                 title={showModal.title} />}
             <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-slate-900 via-[#041726] to-[#052b2b] p-6">
-                <ElectricBorder speed={0.3}>
+                <ElectricBorder speed={0.3} className={undefined} style={undefined}>
                     <div className="w-full max-w-4xl bg-[rgba(255,255,255,0.03)] border border-slate-700 rounded-3xl shadow-xl p-6 backdrop-blur-md">
                         <header className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-4">
                                 <img
-                                    src="/assets/images/logo.png"
+                                    src="/assets/images/logo-2.png"
                                     alt="Logo"
                                     className="w-24 object-contain"
                                 />
@@ -864,28 +877,32 @@ export default function TicTacToeOnChain() {
                                 {statusType === PlayerGameStatus.None && <>
                                     <div className="p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
                                         <h3 className="text-sm text-slate-300">Games Available</h3>
+
                                         {games?.length ? (
-                                            <ul className="mt-3 text-sm text-white/90 leading-6 max-h-[300px] overflow-auto space-y-4">
-                                                {games.map((g: any, idx: number) => (
-                                                    <li
-                                                        key={idx}
-                                                        className="border border-slate-300 rounded-lg p-4 flex flex-col justify-between hover:shadow-md transition cursor-pointer"
-                                                    >
-                                                        <div>
-                                                            <p>Host: {shortenAddress(g.host)}</p>
-                                                            <p>
-                                                                <span className="font-medium">Stake:</span> {weiToEth(g.stake?.toString?.(), "Sonic")}
-                                                            </p>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => handleJoinGame(g.id, g.stake)}
-                                                            className="w-full bg-blue-600 text-white px-2 py-1 rounded-md hover:bg-blue-700 transition mt-2"
+                                            <div className="mt-3 max-h-[300px] overflow-y-auto pr-2">
+                                                <ul className="text-sm text-white/90 leading-6 space-y-4">
+                                                    {games.map((g: any, idx: number) => (
+                                                        <li
+                                                            key={idx}
+                                                            className="border border-slate-300 rounded-lg p-4 flex flex-col justify-between hover:shadow-md transition cursor-pointer"
                                                         >
-                                                            Join
-                                                        </button>
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                                            <div>
+                                                                <p>Host: {shortenAddress(g.host)}</p>
+                                                                <p>
+                                                                    <span className="font-medium">Stake:</span>{" "}
+                                                                    {weiToEth(g.stake?.toString?.(), "Sonic")}
+                                                                </p>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleJoinGame(g.id, g.stake)}
+                                                                className="w-full bg-blue-600 text-white px-2 py-1 rounded-md hover:bg-blue-700 transition mt-2"
+                                                            >
+                                                                Join
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
                                         ) : (
                                             <p className="text-slate-400 italic mt-3">No games available yet</p>
                                         )}
@@ -920,7 +937,7 @@ export default function TicTacToeOnChain() {
                             </aside>
                         </main>
 
-                        <footer className="mt-6 text-center text-xs text-slate-400">Developed with 💜 by SavvyGirl</footer>
+                        <footer className="mt-6 text-center text-xs text-slate-400">Developed with 💜 by SavvyGirl <br /> Tic-Tac-Toe is part of SavvyGirl products.</footer>
                     </div>
                 </ElectricBorder>
 
@@ -932,7 +949,7 @@ export default function TicTacToeOnChain() {
                             handleContractLink();
                         }}
                     >
-                        {SAVVY_TICTACTOE_ADDRESS}
+                        {getContractAddressByChainId(Number(currentChainRef.current))}
                     </a></p>
             </div>
         </div>

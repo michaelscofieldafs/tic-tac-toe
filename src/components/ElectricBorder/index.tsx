@@ -76,8 +76,8 @@ const ElectricBorder = ({ children, color = '#5227FF', speed = 1, chaos = 1, thi
     }, []);
 
     const vars = {
-        ['--electric-border-color']: color,
-        ['--eb-border-width']: `${thickness}px`
+        '--electric-border-color': color,
+        '--eb-border-width': `${thickness}px`
     };
 
     return (

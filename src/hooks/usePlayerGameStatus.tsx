@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useAppKitNetwork } from "@reown/appkit/react";
 import { readContract } from '@wagmi/core';
-import { PlayerGameStatus } from "../enums/playerGameStatus";
+import { useEffect, useRef, useState } from "react";
+import { Address } from "viem";
 import { wagmiAdapter } from "../components/Web3Provider";
 import savvyTicTacToeABI from "../contracts/savvyTicTacToeABI.json";
-import { SAVVY_TICTACTOE_ADDRESS } from "../contracts/savvyticTacToeAddress";
+import { PlayerGameStatus } from "../enums/playerGameStatus";
+import { getContractAddressByChainId } from "../utils/providers/tokenAddressProvider";
 
 export interface PlayerGameStatusProps {
     playerAddress: string;
@@ -14,12 +16,16 @@ export const usePlayerGameStatus = ({ playerAddress }: PlayerGameStatusProps) =>
     const [statusType, setStatusType] = useState<PlayerGameStatus>(PlayerGameStatus.None);
     const [currentGameId, setCurrentGameId] = useState<number | null>(null);
 
+    const { chainId } = useAppKitNetwork();
+
+    const currentChainRef = useRef(chainId);
+
     const fetchStatus = async (addr: string) => {
-        console.log('afsss ' + addr);
         try {
             const pendingGame: any = await readContract(wagmiAdapter.wagmiConfig, {
                 abi: savvyTicTacToeABI,
-                address: SAVVY_TICTACTOE_ADDRESS,
+                chainId: Number(currentChainRef.current),
+                address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                 functionName: 'getPendingGameByHost',
                 args: [addr],
             });
@@ -37,7 +43,8 @@ export const usePlayerGameStatus = ({ playerAddress }: PlayerGameStatusProps) =>
         try {
             const activeGame: any = await readContract(wagmiAdapter.wagmiConfig, {
                 abi: savvyTicTacToeABI,
-                address: SAVVY_TICTACTOE_ADDRESS,
+                chainId: Number(currentChainRef.current),
+                address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                 functionName: 'getActiveGameInfo',
                 args: [playerAddress],
             });
@@ -45,7 +52,6 @@ export const usePlayerGameStatus = ({ playerAddress }: PlayerGameStatusProps) =>
             if (activeGame && activeGame.id !== undefined) {
                 setStatusText('Match started!');
                 setStatusType(PlayerGameStatus.InProgress);
-                console.log(Number(activeGame.id))
                 setCurrentGameId(Number(activeGame.id));
                 return;
             }
@@ -58,9 +64,11 @@ export const usePlayerGameStatus = ({ playerAddress }: PlayerGameStatusProps) =>
     };
 
     useEffect(() => {
-        if (!playerAddress) return;
+        currentChainRef.current = chainId;
+    }, [chainId])
 
-        console.log(playerAddress)
+    useEffect(() => {
+        if (!playerAddress) return;
 
         fetchStatus(playerAddress);
     }, [playerAddress]);

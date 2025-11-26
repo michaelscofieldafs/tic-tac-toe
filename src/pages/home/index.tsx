@@ -744,224 +744,225 @@ export default function TicTacToeOnChain() {
                         </div>
                     </header>
 
-                    <main className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                        {/* Board */}
-                        <section className="col-span-1 md:col-span-2">
-                            <div className="mx-auto w-[min(420px,90vw)]">
-                                <div className="flex justify-center items-center h-full">
-                                    <div className="mb-2 text-sm text-slate-300 font-semibold text-center">
-                                        {statusType === PlayerGameStatus.WaitingForOpponent ? (
-                                            <a
-                                                href="#"
-                                                className="underline text-blue-400 hover:text-blue-300 transition"
-                                                onClick={() => {
-                                                    handleLink();
-                                                }}
-                                            >
-                                                {statusText}
-                                            </a>
-                                        ) : (
-                                            statusText
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-3 gap-4 p-6 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)] rounded-2xl border border-slate-700">
-                                    {board.map((cell, i) => {
-                                        const isWinning = winnerInfo && winnerInfo.line.includes(i);
-                                        return (
-                                            <motion.button
-                                                key={i}
-                                                onClick={() => handleMakeMove(currentGameId!, i)}
-                                                initial={{ opacity: 0, scale: 0.9 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                whileTap={{ scale: 0.96 }}
-                                                disabled={!isMyTurn() || isLoadingMove || currentGame?.state !== GameState.InProgress}
-                                                className={`
-    aspect-square rounded-lg flex items-center justify-center text-4xl font-extrabold select-none transition-shadow
-    ${isWinning
-                                                        ? 'bg-gradient-to-br from-yellow-400 to-orange-400 text-slate-900 shadow-[0_10px_30px_rgba(255,165,0,0.12)]'
-                                                        : `${!isMyTurn() || isLoadingMove || currentGame?.state !== GameState.InProgress
-                                                            ? 'cursor-not-allowed hover:bg-red-500/10 hover:shadow-[0_0_15px_rgba(255,0,0,0.25)]'
-                                                            : 'cursor-pointer hover:bg-white/5'
-                                                        } bg-[rgba(255,255,255,0.01)] text-white`
-                                                    }
-`}
-                                            >
-                                                <span className="pointer-events-none">
-                                                    {cell === 'X' ? (
-                                                        <svg viewBox="0 0 48 48" width="56" height="56" className="block">
-                                                            <path d="M8 8L40 40M40 8L8 40" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-                                                        </svg>
-                                                    ) : cell === 'O' ? (
-                                                        <svg viewBox="0 0 48 48" width="56" height="56" className="block">
-                                                            <circle cx="24" cy="24" r="14" stroke="currentColor" strokeWidth="3.5" fill="none" />
-                                                        </svg>
-                                                    ) : (
-                                                        <div className="text-slate-500 text-sm">&nbsp;</div>
-                                                    )}
-                                                </span>
-                                            </motion.button>
-                                        );
-                                    })}
-                                </div>
-                                {currentGame?.state === GameState.InProgress &&
-                                    <div className="mt-4 flex items-center justify-between text-sm text-slate-300">
-                                        <div>Turn: <span className="font-semibold text-white">
-                                            {!isMyTurn()
-                                                ? `Opponent's turn - ${getMyPiece()}`
-                                                : `Your turn - ${getMyPiece()} `}
-                                        </span></div>
-                                        <div className="text-right">
-                                            {winnerInfo ? (
-                                                winnerInfo.winner === 'draw' ? (
-                                                    <span className="font-semibold">It's a draw</span>
-                                                ) : (
-                                                    <span className="font-semibold">Winner: {winnerInfo.winner}</span>
-                                                )
+                    <ElectricBorder speed={0.3} className={undefined} style={undefined}>
+                        <main className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                            {/* Board */}
+                            <section className="col-span-1 md:col-span-2">
+                                <div className="mx-auto w-[min(420px,90vw)]">
+                                    <div className="flex justify-center items-center h-full">
+                                        <div className="mb-2 text-sm text-slate-300 font-semibold text-center">
+                                            {statusType === PlayerGameStatus.WaitingForOpponent ? (
+                                                <a
+                                                    href="#"
+                                                    className="underline text-blue-400 hover:text-blue-300 transition"
+                                                    onClick={() => {
+                                                        handleLink();
+                                                    }}
+                                                >
+                                                    {statusText}
+                                                </a>
                                             ) : (
-                                                <span>In play</span>
+                                                statusText
                                             )}
                                         </div>
                                     </div>
-                                }
-                                {/**
+                                    <div className="grid grid-cols-3 gap-4 p-6 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)] rounded-2xl border border-slate-700">
+                                        {board.map((cell, i) => {
+                                            const isWinning = winnerInfo && winnerInfo.line.includes(i);
+                                            return (
+                                                <motion.button
+                                                    key={i}
+                                                    onClick={() => handleMakeMove(currentGameId!, i)}
+                                                    initial={{ opacity: 0, scale: 0.9 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    whileTap={{ scale: 0.96 }}
+                                                    disabled={!isMyTurn() || isLoadingMove || currentGame?.state !== GameState.InProgress}
+                                                    className={`
+    aspect-square rounded-lg flex items-center justify-center text-4xl font-extrabold select-none transition-shadow
+    ${isWinning
+                                                            ? 'bg-gradient-to-br from-yellow-400 to-orange-400 text-slate-900 shadow-[0_10px_30px_rgba(255,165,0,0.12)]'
+                                                            : `${!isMyTurn() || isLoadingMove || currentGame?.state !== GameState.InProgress
+                                                                ? 'cursor-not-allowed hover:bg-red-500/10 hover:shadow-[0_0_15px_rgba(255,0,0,0.25)]'
+                                                                : 'cursor-pointer hover:bg-white/5'
+                                                            } bg-[rgba(255,255,255,0.01)] text-white`
+                                                        }
+`}
+                                                >
+                                                    <span className="pointer-events-none">
+                                                        {cell === 'X' ? (
+                                                            <svg viewBox="0 0 48 48" width="56" height="56" className="block">
+                                                                <path d="M8 8L40 40M40 8L8 40" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                                                            </svg>
+                                                        ) : cell === 'O' ? (
+                                                            <svg viewBox="0 0 48 48" width="56" height="56" className="block">
+                                                                <circle cx="24" cy="24" r="14" stroke="currentColor" strokeWidth="3.5" fill="none" />
+                                                            </svg>
+                                                        ) : (
+                                                            <div className="text-slate-500 text-sm">&nbsp;</div>
+                                                        )}
+                                                    </span>
+                                                </motion.button>
+                                            );
+                                        })}
+                                    </div>
+                                    {currentGame?.state === GameState.InProgress &&
+                                        <div className="mt-4 flex items-center justify-between text-sm text-slate-300">
+                                            <div>Turn: <span className="font-semibold text-white">
+                                                {!isMyTurn()
+                                                    ? `Opponent's turn - ${getMyPiece()}`
+                                                    : `Your turn - ${getMyPiece()} `}
+                                            </span></div>
+                                            <div className="text-right">
+                                                {winnerInfo ? (
+                                                    winnerInfo.winner === 'draw' ? (
+                                                        <span className="font-semibold">It's a draw</span>
+                                                    ) : (
+                                                        <span className="font-semibold">Winner: {winnerInfo.winner}</span>
+                                                    )
+                                                ) : (
+                                                    <span>In play</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    }
+                                    {/**
                                     <div className="mt-4 text-sm text-slate-300 font-semibold">
                                         Actions
                                     </div>
                                      */}
-                                {/* Create Game */}
-                                {statusType === PlayerGameStatus.None &&
-                                    <div className="mt-2 p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
-                                        <h3 className="text-white font-semibold mb-2">Create New Game</h3>
-                                        <div className="flex flex-wrap gap-2">
-                                            <input
-                                                className="text-black p-2 rounded flex-1 min-w-[80px]"
-                                                placeholder="Stake"
-                                                value={stakeInput}
-                                                onChange={(e) => setStakeInput(e.target.value)}
-                                            />
-                                            <button
-                                                className="px-4 py-2 bg-green-600 rounded text-white font-semibold"
-                                                onClick={() => handleCreateGame(stakeInput)}
-                                            >
-                                                Create Now
-                                            </button>
-                                        </div>
-                                    </div>
-                                }
-                                {statusType === PlayerGameStatus.WaitingForOpponent && (currentGame?.state === GameState.InProgress || currentGame?.state === GameState.WaitingForPlayer) &&
-                                    <div className="mt-2 p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
-                                        <div className="flex justify-center">
-                                            <button
-                                                disabled={isLoadingCancelGame}
-                                                className={`px-4 py-2 rounded font-semibold transition-colors ${!isLoadingCancelGame
-                                                    ? 'bg-yellow-600 text-white hover:bg-yellow-500 cursor-pointer'
-                                                    : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                                                    }`}
-                                                onClick={() => cancelPendingGame(currentGameId!)}
-                                            >
-                                                CANCEL GAME
-                                            </button>
-                                        </div>
-                                    </div>
-                                }
-
-                                {statusType === PlayerGameStatus.InProgress && (currentGame?.state === GameState.InProgress || currentGame?.state === GameState.WaitingForPlayer) &&
-                                    <div className="mt-6 p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
-                                        <GameTimerText expired={expired} minutes={minutes} seconds={seconds} />
-                                        <div className="flex">
-                                            <button
-                                                disabled={isLoadingCancelGame}
-                                                className={`px-4 py-2 mr-4 rounded font-semibold transition-colors ${!isLoadingCancelGame
-                                                    ? 'bg-yellow-600 text-white hover:bg-yellow-500 cursor-pointer'
-                                                    : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                                                    }`}
-                                                onClick={() => forfeitGame(currentGameId!)}
-                                            >
-                                                FORFEIT GAME
-                                            </button>
-                                            <div className="flex justify-center">
+                                    {/* Create Game */}
+                                    {statusType === PlayerGameStatus.None &&
+                                        <div className="mt-2 p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
+                                            <h3 className="text-white font-semibold mb-2">Create New Game</h3>
+                                            <div className="flex flex-wrap gap-2">
+                                                <input
+                                                    className="text-black p-2 rounded flex-1 min-w-[80px]"
+                                                    placeholder="Stake"
+                                                    value={stakeInput}
+                                                    onChange={(e) => setStakeInput(e.target.value)}
+                                                />
                                                 <button
-                                                    className={`px-4 py-2 rounded font-semibold transition-colors ${expired
-                                                        ? 'bg-yellow-600 text-white hover:bg-yellow-500 cursor-pointer'
-                                                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                                                        }`}
-                                                    onClick={() => expired && claimTimeoutGame(currentGameId!)}
-                                                    disabled={!expired || isLoadingCancelGame}
+                                                    className="px-4 py-2 bg-green-600 rounded text-white font-semibold"
+                                                    onClick={() => handleCreateGame(stakeInput.replaceAll(",", "."))}
                                                 >
-                                                    CANCEL GAME BY TIMEOUT
+                                                    Create Now
                                                 </button>
                                             </div>
                                         </div>
+                                    }
+                                    {statusType === PlayerGameStatus.WaitingForOpponent && (currentGame?.state === GameState.InProgress || currentGame?.state === GameState.WaitingForPlayer) &&
+                                        <div className="mt-2 p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
+                                            <div className="flex justify-center">
+                                                <button
+                                                    disabled={isLoadingCancelGame}
+                                                    className={`px-4 py-2 rounded font-semibold transition-colors ${!isLoadingCancelGame
+                                                        ? 'bg-yellow-600 text-white hover:bg-yellow-500 cursor-pointer'
+                                                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                        }`}
+                                                    onClick={() => cancelPendingGame(currentGameId!)}
+                                                >
+                                                    CANCEL GAME
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    {statusType === PlayerGameStatus.InProgress && (currentGame?.state === GameState.InProgress || currentGame?.state === GameState.WaitingForPlayer) &&
+                                        <div className="mt-6 p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
+                                            <GameTimerText expired={expired} minutes={minutes} seconds={seconds} />
+                                            <div className="flex">
+                                                <button
+                                                    disabled={isLoadingCancelGame}
+                                                    className={`px-4 py-2 mr-4 rounded font-semibold transition-colors ${!isLoadingCancelGame
+                                                        ? 'bg-yellow-600 text-white hover:bg-yellow-500 cursor-pointer'
+                                                        : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                        }`}
+                                                    onClick={() => forfeitGame(currentGameId!)}
+                                                >
+                                                    FORFEIT GAME
+                                                </button>
+                                                <div className="flex justify-center">
+                                                    <button
+                                                        className={`px-4 py-2 rounded font-semibold transition-colors ${expired
+                                                            ? 'bg-yellow-600 text-white hover:bg-yellow-500 cursor-pointer'
+                                                            : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                            }`}
+                                                        onClick={() => expired && claimTimeoutGame(currentGameId!)}
+                                                        disabled={!expired || isLoadingCancelGame}
+                                                    >
+                                                        CANCEL GAME BY TIMEOUT
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </section>
+                            {/* Right column: games list + tips */}
+                            <aside className="space-y-4 w-full">
+                                {statusType === PlayerGameStatus.None && <>
+                                    <div className="p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
+                                        <h3 className="text-sm text-slate-300">Games Available</h3>
+
+                                        {games?.length ? (
+                                            <div className="mt-3 max-h-[300px] overflow-y-auto pr-2">
+                                                <ul className="text-sm text-white/90 leading-6 space-y-4">
+                                                    {games.map((g: any, idx: number) => (
+                                                        <li
+                                                            key={idx}
+                                                            className="border border-slate-300 rounded-lg p-4 flex flex-col justify-between hover:shadow-md transition cursor-pointer"
+                                                        >
+                                                            <div>
+                                                                <p>Host: {shortenAddress(g.host)}</p>
+                                                                <p>
+                                                                    <span className="font-medium">Stake:</span>{" "}
+                                                                    {weiToEth(g.stake?.toString?.(), "Sonic")}
+                                                                </p>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleJoinGame(g.id, g.stake)}
+                                                                className="w-full bg-blue-600 text-white px-2 py-1 rounded-md hover:bg-blue-700 transition mt-2"
+                                                            >
+                                                                Join
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ) : (
+                                            <p className="text-slate-400 italic mt-3">No games available yet</p>
+                                        )}
+                                    </div>
+
+                                    <div className="p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)] flex flex-col">
+                                        <h3 className="text-sm text-slate-300">Join Game</h3>
+
+                                        <input
+                                            type="number"
+                                            placeholder="Enter Game ID"
+                                            value={gameIdInput}
+                                            onChange={(e) => setGameIdInput(e.target.value)}
+                                            className="px-3 py-2 mt-4 rounded-md border border-slate-600 bg-slate-900 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                                        />
+
+                                        <button
+                                            disabled={!gameIdInput}
+                                            onClick={handleJoinGameById}
+                                            className="w-full bg-blue-600 text-white px-2 py-1 rounded-md hover:bg-blue-700 transition mt-4 disabled:opacity-50"
+                                        >
+                                            {isConnected ? 'Join' : 'Connect wallet to join'}
+                                        </button>
+                                    </div>
+                                </>}
+                                {fee > 0 &&
+                                    <div className="p-4 rounded-2xl border border-slate-700 bg-gradient-to-br from-[#021e1f] to-[#062f30] shadow-inner">
+                                        <h4 className="text-white font-semibold">Platform Fee</h4>
+                                        <p className="mt-2 text-slate-300 text-sm">{`A fee of ${fee}% is applied only when a match concludes with a winner, and is then allocated to the platform.`}</p>
                                     </div>
                                 }
-                            </div>
-                        </section>
-                        {/* Right column: games list + tips */}
-                        <aside className="space-y-4 w-full">
-                            {statusType === PlayerGameStatus.None && <>
-                                <div className="p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]">
-                                    <h3 className="text-sm text-slate-300">Games Available</h3>
-
-                                    {games?.length ? (
-                                        <div className="mt-3 max-h-[300px] overflow-y-auto pr-2">
-                                            <ul className="text-sm text-white/90 leading-6 space-y-4">
-                                                {games.map((g: any, idx: number) => (
-                                                    <li
-                                                        key={idx}
-                                                        className="border border-slate-300 rounded-lg p-4 flex flex-col justify-between hover:shadow-md transition cursor-pointer"
-                                                    >
-                                                        <div>
-                                                            <p>Host: {shortenAddress(g.host)}</p>
-                                                            <p>
-                                                                <span className="font-medium">Stake:</span>{" "}
-                                                                {weiToEth(g.stake?.toString?.(), "Sonic")}
-                                                            </p>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => handleJoinGame(g.id, g.stake)}
-                                                            className="w-full bg-blue-600 text-white px-2 py-1 rounded-md hover:bg-blue-700 transition mt-2"
-                                                        >
-                                                            Join
-                                                        </button>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    ) : (
-                                        <p className="text-slate-400 italic mt-3">No games available yet</p>
-                                    )}
-                                </div>
-
-                                <div className="p-4 rounded-2xl border border-slate-700 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)] flex flex-col">
-                                    <h3 className="text-sm text-slate-300">Join Game</h3>
-
-                                    <input
-                                        type="number"
-                                        placeholder="Enter Game ID"
-                                        value={gameIdInput}
-                                        onChange={(e) => setGameIdInput(e.target.value)}
-                                        className="px-3 py-2 mt-4 rounded-md border border-slate-600 bg-slate-900 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-                                    />
-
-                                    <button
-                                        disabled={!gameIdInput}
-                                        onClick={handleJoinGameById}
-                                        className="w-full bg-blue-600 text-white px-2 py-1 rounded-md hover:bg-blue-700 transition mt-4 disabled:opacity-50"
-                                    >
-                                        {isConnected ? 'Join' : 'Connect wallet to join'}
-                                    </button>
-                                </div>
-                            </>}
-                            {fee > 0 &&
-                                <div className="p-4 rounded-2xl border border-slate-700 bg-gradient-to-br from-[#021e1f] to-[#062f30] shadow-inner">
-                                    <h4 className="text-white font-semibold">Platform Fee</h4>
-                                    <p className="mt-2 text-slate-300 text-sm">{`A fee of ${fee}% is applied only when a match concludes with a winner, and is then allocated to the platform.`}</p>
-                                </div>
-                            }
-                        </aside>
-                    </main>
-
+                            </aside>
+                        </main>
+                    </ElectricBorder>
                     <footer className="mt-6 text-center text-xs text-slate-400">Developed with 💜 by SavvyGirl <br /> Tic-Tac-Toe is part of SavvyGirl products.</footer>
                 </div>
 

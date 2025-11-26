@@ -744,7 +744,7 @@ export default function TicTacToeOnChain() {
                         </div>
                     </header>
 
-                    <ElectricBorder speed={0.3} className={undefined} style={undefined}>
+                    <ElectricBorder speed={0.3} className={undefined} style={{ padding: 15 }}>
                         <main className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
                             {/* Board */}
                             <section className="col-span-1 md:col-span-2">

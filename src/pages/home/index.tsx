@@ -870,7 +870,7 @@ export default function TicTacToeOnChain() {
                                         <GameTimerText expired={expired} minutes={minutes} seconds={seconds} />
                                         <div className="flex">
                                             <button
-                                                disabled={isLoadingCancelGame || !expired || isMyTurn()}
+                                                disabled={isLoadingCancelGame}
                                                 className={`px-4 py-2 mr-4 rounded font-semibold transition-colors ${!isLoadingCancelGame
                                                     ? 'bg-yellow-600 text-white hover:bg-yellow-500 cursor-pointer'
                                                     : 'bg-gray-400 text-gray-200 cursor-not-allowed'
@@ -886,7 +886,7 @@ export default function TicTacToeOnChain() {
                                                         : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                                                         }`}
                                                     onClick={() => expired && claimTimeoutGame(currentGameId!)}
-                                                    disabled={!expired || isLoadingCancelGame}
+                                                    disabled={!expired || isLoadingCancelGame || isMyTurn()}
                                                 >
                                                     CANCEL GAME BY TIMEOUT
                                                 </button>

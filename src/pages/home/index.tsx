@@ -302,7 +302,7 @@ export default function TicTacToeOnChain() {
                     const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
                     if (receipt.status === "success") {
                         showToast("Game canceled successfully!")
-                        refetch(address!);
+                        refetch(currentAddressRef.current!);
                     } else {
                         showToast("Error cancelling the game!", "error");
                     }
@@ -344,7 +344,7 @@ export default function TicTacToeOnChain() {
                     const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
                     if (receipt.status === "success") {
                         showToast("Game canceled successfully!")
-                        refetch(address!);
+                        refetch(currentAddressRef.current!);
                     } else {
                         showToast("Error cancelling the game!", "error");
                     }
@@ -385,7 +385,7 @@ export default function TicTacToeOnChain() {
                     const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
                     if (receipt.status === "success") {
                         showToast("Game canceled successfully!")
-                        refetch(address!);
+                        refetch(currentAddressRef.current!);
                     } else {
                         showToast("Error cancelling the game!", "error");
                     }

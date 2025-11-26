@@ -148,7 +148,7 @@ export default function TicTacToeOnChain() {
                     if (receipt.status === "success") {
                         showToast("Game created successfully!")
                         setStakeInput('');
-                        refetch(address!);
+                        refetch(currentAddressRef.current!);
                     }
                     else {
                         showToast("Error creating the game. Please try again!", "error")
@@ -433,7 +433,7 @@ export default function TicTacToeOnChain() {
                     if (receipt.status === 'success') {
                         setGameIdInput('');
                         refetchGames();
-                        refetch(address!);
+                        refetch(currentAddressRef.current!);
                         refetchBoard();
                     }
                     else {
@@ -486,7 +486,7 @@ export default function TicTacToeOnChain() {
                     if (receipt.status === 'success') {
                         setGameIdInput('');
                         refetchGames();
-                        refetch(address!);
+                        refetch(currentAddressRef.current!);
                         refetchBoard();
                     }
                     else {
@@ -525,7 +525,7 @@ export default function TicTacToeOnChain() {
 
                 if (receipt.status === 'success') {
                     refetchGames();
-                    refetch(address!);
+                    refetch(currentAddressRef.current!);
                     refetchBoard();
                 }
                 else {
@@ -559,7 +559,7 @@ export default function TicTacToeOnChain() {
                 refetchBoard()
                 playMove();
                 await Promise.all([,
-                    refetch(address!),
+                    refetch(currentAddressRef.current!),
                     fetchGameById(gameId)]);
             }
             else {
@@ -656,12 +656,10 @@ export default function TicTacToeOnChain() {
             onBlock({ number }: any) {
                 // Refresh available games list, the player's current status (host/challenger),
                 // the active game if there's one running, and the game board state.
-                if (!isPlayMoveRef.current) {
-                    refetchGames();
-                    refetch(currentAddressRef.current!);
-                    const id = currentGameIdRef.current;
-                    if (id !== null) fetchGameById(id);
-                }
+                refetchGames();
+                refetch(currentAddressRef.current!);
+                const id = currentGameIdRef.current;
+                if (id !== null) fetchGameById(id);
             },
         });
         return () => unwatch();

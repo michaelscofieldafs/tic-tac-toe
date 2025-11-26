@@ -148,7 +148,7 @@ export default function TicTacToeOnChain() {
                     if (receipt.status === "success") {
                         showToast("Game created successfully!")
                         setStakeInput('');
-                        refetch(currentAddressRef.current!);
+                        refetch(address!);
                     }
                     else {
                         showToast("Error creating the game. Please try again!", "error")
@@ -302,7 +302,7 @@ export default function TicTacToeOnChain() {
                     const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
                     if (receipt.status === "success") {
                         showToast("Game canceled successfully!")
-                        refetch(currentAddressRef.current!);
+                        refetch(address!);
                     } else {
                         showToast("Error cancelling the game!", "error");
                     }
@@ -344,7 +344,7 @@ export default function TicTacToeOnChain() {
                     const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
                     if (receipt.status === "success") {
                         showToast("Game canceled successfully!")
-                        refetch(currentAddressRef.current!);
+                        refetch(address!);
                     } else {
                         showToast("Error cancelling the game!", "error");
                     }
@@ -385,7 +385,7 @@ export default function TicTacToeOnChain() {
                     const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash });
                     if (receipt.status === "success") {
                         showToast("Game canceled successfully!")
-                        refetch(currentAddressRef.current!);
+                        refetch(address!);
                     } else {
                         showToast("Error cancelling the game!", "error");
                     }
@@ -433,7 +433,7 @@ export default function TicTacToeOnChain() {
                     if (receipt.status === 'success') {
                         setGameIdInput('');
                         refetchGames();
-                        refetch(currentAddressRef.current!);
+                        refetch(address!);
                         refetchBoard();
                     }
                     else {
@@ -486,7 +486,7 @@ export default function TicTacToeOnChain() {
                     if (receipt.status === 'success') {
                         setGameIdInput('');
                         refetchGames();
-                        refetch(currentAddressRef.current!);
+                        refetch(address!);
                         refetchBoard();
                     }
                     else {
@@ -525,7 +525,7 @@ export default function TicTacToeOnChain() {
 
                 if (receipt.status === 'success') {
                     refetchGames();
-                    refetch(currentAddressRef.current!);
+                    refetch(address!);
                     refetchBoard();
                 }
                 else {
@@ -559,7 +559,7 @@ export default function TicTacToeOnChain() {
                 refetchBoard()
                 playMove();
                 await Promise.all([,
-                    refetch(currentAddressRef.current!),
+                    refetch(address!),
                     fetchGameById(gameId)]);
             }
             else {
@@ -656,10 +656,12 @@ export default function TicTacToeOnChain() {
             onBlock({ number }: any) {
                 // Refresh available games list, the player's current status (host/challenger),
                 // the active game if there's one running, and the game board state.
-                refetchGames();
-                refetch(currentAddressRef.current!);
-                const id = currentGameIdRef.current;
-                if (id !== null) fetchGameById(id);
+                if (!isPlayMoveRef.current) {
+                    refetchGames();
+                    refetch(currentAddressRef.current!);
+                    const id = currentGameIdRef.current;
+                    if (id !== null) fetchGameById(id);
+                }
             },
         });
         return () => unwatch();

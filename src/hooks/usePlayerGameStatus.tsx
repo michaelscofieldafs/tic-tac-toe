@@ -46,7 +46,7 @@ export const usePlayerGameStatus = ({ playerAddress }: PlayerGameStatusProps) =>
                 chainId: Number(currentChainRef.current),
                 address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                 functionName: 'getActiveGameInfo',
-                args: [playerAddress],
+                args: [addr],
             });
 
             if (activeGame && activeGame.id !== undefined) {

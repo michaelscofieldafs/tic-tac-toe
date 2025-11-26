@@ -870,7 +870,7 @@ export default function TicTacToeOnChain() {
                                         <GameTimerText expired={expired} minutes={minutes} seconds={seconds} />
                                         <div className="flex">
                                             <button
-                                                disabled={isLoadingCancelGame}
+                                                disabled={isLoadingCancelGame || !expired || isMyTurn()}
                                                 className={`px-4 py-2 mr-4 rounded font-semibold transition-colors ${!isLoadingCancelGame
                                                     ? 'bg-yellow-600 text-white hover:bg-yellow-500 cursor-pointer'
                                                     : 'bg-gray-400 text-gray-200 cursor-not-allowed'
@@ -881,7 +881,7 @@ export default function TicTacToeOnChain() {
                                             </button>
                                             <div className="flex justify-center">
                                                 <button
-                                                    className={`px-4 py-2 rounded font-semibold transition-colors ${expired
+                                                    className={`px-4 py-2 rounded font-semibold transition-colors ${expired && !isMyTurn()
                                                         ? 'bg-yellow-600 text-white hover:bg-yellow-500 cursor-pointer'
                                                         : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                                                         }`}

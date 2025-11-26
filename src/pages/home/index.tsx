@@ -66,7 +66,7 @@ export default function TicTacToeOnChain() {
 
     // GAME SOUNDS
     // start sound
-    const [playMove] = useSound('/assets/sounds/game-move.mp3', { volume: 0.5, interrupt: false });
+    const [playMove] = useSound('/assets/sounds/game-move.mp3', { volume: 0.5 });
     // Win sound
     const [playWin] = useSound('/assets/sounds/game-winner.mp3', { volume: 0.5 });
     // Loss sound

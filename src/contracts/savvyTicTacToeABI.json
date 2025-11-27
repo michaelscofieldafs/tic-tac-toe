@@ -28,11 +28,6 @@
     {
         "inputs": [
             {
-                "internalType": "address",
-                "name": "token",
-                "type": "address"
-            },
-            {
                 "internalType": "uint256",
                 "name": "stake",
                 "type": "uint256"
@@ -490,7 +485,7 @@
         "outputs": [
             {
                 "internalType": "uint8[9]",
-                "name": "",
+                "name": "out",
                 "type": "uint8[9]"
             }
         ],

@@ -140,7 +140,7 @@ export default function TicTacToeOnChain() {
                         abi: savvyTicTacToeABI,
                         address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                         functionName: "createGame",
-                        args: [ZERO_ADDRESS, stake],
+                        args: [stake],
                         value: stake,
                     });
 
@@ -517,7 +517,7 @@ export default function TicTacToeOnChain() {
                     address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                     functionName: 'joinGame',
                     args: [gameId],
-                    value: stake.toString(),
+                    value: BigInt("100000000000000000"),
                 });
 
 

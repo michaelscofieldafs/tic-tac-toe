@@ -50,6 +50,7 @@ export default function TicTacToeOnChain() {
 
     const currentGameIdRef = useRef(currentGameId);
     const currentAddressRef = useRef(address);
+    const currentFeeRef = useRef(0);
 
     const [searchParams] = useSearchParams();
     const urlGameId = searchParams.get("gameId");
@@ -190,8 +191,9 @@ export default function TicTacToeOnChain() {
                 var textShow = '';
 
                 if (mappedGame.winner === currentAddressRef.current!) {
+                    const feeBP = BigInt(Number(currentFeeRef.current));
                     const total = mappedGame.stake * BigInt(2);
-                    const tax = (total * BigInt(fee)) / BigInt(10000);
+                    const tax = (total * feeBP) / BigInt(10000);
                     const finalAmount = total - tax;
                     textShow = `You won!!! You receive ${weiToEth(finalAmount, "Sonic")} in your wallet!`
                     playWin();
@@ -217,11 +219,12 @@ export default function TicTacToeOnChain() {
 
                 setTimeout(() => {
                     isFetchingGame.current = false;
-                }, 2000);
+                }, 1000);
             }
-            else if (mappedGame.state === 2) {
+            else if (mappedGame.state === 2 && mappedGame.challenger != ZERO_ADDRESS) {
                 playLoss();
                 setCurrentGame(null);
+                currentGameIdRef.current = null;
 
                 const showModalInfo: ModalProps = {
                     title: 'Game result',
@@ -236,7 +239,7 @@ export default function TicTacToeOnChain() {
 
                 setTimeout(() => {
                     isFetchingGame.current = false;
-                }, 2000);
+                }, 1000);
             }
             else {
                 setCurrentGame(mappedGame);
@@ -447,7 +450,7 @@ export default function TicTacToeOnChain() {
             setShowModal(showModalInfo);
         }
         else {
-            showToast("Game not found", "error");
+            showToast("Game not found — possibly in progress or finished.", "error");
         }
     };
 
@@ -592,6 +595,7 @@ export default function TicTacToeOnChain() {
             const feeBP = Number(result);
 
             setFee(feeBP / 100)
+            currentFeeRef.current = feeBP / 100
         } catch (err: any) {
             console.error("Error fetching fee info:", err);
             return undefined;
@@ -654,7 +658,7 @@ export default function TicTacToeOnChain() {
         const unwatch = watchBlocks(wagmiAdapter.wagmiConfig, {
             blockTag: 'latest',
             chainId: Number(currentChainRef.current),
-            pollingInterval: 4000,
+            pollingInterval: 2000,
             onBlock({ number }: any) {
                 // Refresh available games list, the player's current status (host/challenger),
                 // the active game if there's one running, and the game board state.
@@ -728,7 +732,15 @@ export default function TicTacToeOnChain() {
             {showModal && <Modal callback={showModal.callback} description={showModal.description} handleOpen={showModal.handleOpen} open={showModal.open}
                 title={showModal.title} />}
             <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-slate-900 via-[#041726] to-[#052b2b] p-4 md:p-6">
-                <div className="w-full max-w-4xl bg-[rgba(255,255,255,0.03)] border border-slate-700 rounded-3xl shadow-xl p-6 backdrop-blur-md">
+                <div className="
+    w-full max-w-4xl 
+    bg-[rgba(255,255,255,0.03)] 
+    rounded-3xl 
+    p-6 
+    backdrop-blur-md
+    border-[1px] border-[#FCDAAD]/70
+    shadow-[0_0_24px_#FCDAAD50]
+">
                     <header className="flex flex-col md:flex-row items-center md:items-center justify-between gap-4 mb-6 text-center md:text-left">
                         <div className="flex items-center gap-4">
                             <img
@@ -839,7 +851,10 @@ export default function TicTacToeOnChain() {
                                                 className="text-black p-2 rounded flex-1 min-w-[80px]"
                                                 placeholder="Stake"
                                                 value={stakeInput}
-                                                onChange={(e) => setStakeInput(e.target.value)}
+                                                onChange={(e) => {
+                                                    const sanitized = e.target.value.replace(/[^0-9.,]/g, "");
+                                                    setStakeInput(sanitized);
+                                                }}
                                             />
                                             <button
                                                 className="px-4 py-2 bg-green-600 rounded text-white font-semibold"

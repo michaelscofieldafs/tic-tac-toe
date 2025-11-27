@@ -190,11 +190,14 @@ export default function TicTacToeOnChain() {
                 var textShow = '';
 
                 if (mappedGame.winner === currentAddressRef.current!) {
-                    textShow = `You win!!! You receive ${weiToEth(mappedGame.stake * BigInt(2), "Sonic")} in your wallet!`
+                    const total = mappedGame.stake * BigInt(2);
+                    const tax = (total * BigInt(fee)) / BigInt(10000);
+                    const finalAmount = total - tax;
+                    textShow = `You won!!! You receive ${weiToEth(finalAmount, "Sonic")} in your wallet!`
                     playWin();
                 }
                 else {
-                    textShow = 'You loss!!!';
+                    textShow = 'You lost!!!';
                     playLoss();
                 }
 

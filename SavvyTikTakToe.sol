@@ -93,7 +93,6 @@ contract SavvyGirlOnchainTicTacToe is ReentrancyGuard, Ownable {
     // ==============================
 
     function createGame(
-        address token,
         uint256 stake
     ) external payable nonReentrant returns (uint256) {
         require(stake > 0, "stake must be > 0");
@@ -115,16 +114,11 @@ contract SavvyGirlOnchainTicTacToe is ReentrancyGuard, Ownable {
             );
         }
 
-        // Pagamento / depósito
-        if (token == address(0)) {
-            require(msg.value == stake, "Send correct native token amount");
-        } else {
-            IERC20(token).transferFrom(msg.sender, address(this), stake);
-        }
+        require(msg.value == stake, "Send correct native token amount");
 
         Game memory newGame;
         newGame.host = msg.sender;
-        newGame.token = token;
+        newGame.token = address(0);
         newGame.stake = stake;
         newGame.turn = _randomTurn();
         newGame.state = GameState.WaitingForPlayer;
@@ -136,7 +130,7 @@ contract SavvyGirlOnchainTicTacToe is ReentrancyGuard, Ownable {
 
         activeGameOfHost[msg.sender] = newId;
 
-        emit GameCreated(newId, msg.sender, token, stake);
+        emit GameCreated(newId, msg.sender, address(0), stake);
         return newId;
     }
 

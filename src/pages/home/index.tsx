@@ -694,7 +694,7 @@ export default function TicTacToeOnChain() {
     }, [urlGameId]);
 
     useEffect(() => {
-        if (currentGameId) {
+        if (currentGameId != null) {
             currentGameIdRef.current = currentGameId;
             fetchGameById(currentGameId!);
         }

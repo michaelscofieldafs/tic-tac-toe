@@ -293,7 +293,7 @@ contract SavvyGirlOnchainTicTacToe is ReentrancyGuard, Ownable {
         lastMoveAt = g.lastMoveAt;
     }
 
-    // List latest available games with limit 10
+    // List latest available games
     function listAvailableGames(
         address player,
         uint256 maxResults
@@ -346,27 +346,6 @@ contract SavvyGirlOnchainTicTacToe is ReentrancyGuard, Ownable {
 
         return result;
     }
-
-    // list all games
-    /**
-    function listGames() external view returns (GameInfo[] memory) {
-    uint256 count = games.length;
-    GameInfo[] memory result = new GameInfo[](count);
-
-    for (uint256 i = 0; i < count; i++) {
-        Game storage g = games[i];
-        result[i] = GameInfo({
-            id: i,
-            host: g.host,
-            challenger: g.challenger,
-            token: g.token,
-            stake: g.stake,
-            state: uint8(g.state)
-        });
-    }
-
-    return result;
-}*/
 
     // view total games
     function totalGames() external view returns (uint256) {

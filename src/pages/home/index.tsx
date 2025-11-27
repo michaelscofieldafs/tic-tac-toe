@@ -524,7 +524,7 @@ export default function TicTacToeOnChain() {
                     address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                     functionName: 'joinGame',
                     args: [gameId],
-                    value: BigInt("100000000000000000"),
+                    value: BigInt(stake),
                 });
 
 

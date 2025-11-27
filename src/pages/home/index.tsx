@@ -424,9 +424,8 @@ export default function TicTacToeOnChain() {
                         address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                         functionName: 'joinGame',
                         args: [gameId],
-                        value: gameInfo.stake,
+                        value: BigInt(gameInfo.stake),
                     });
-
 
                     const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash })
 
@@ -477,7 +476,7 @@ export default function TicTacToeOnChain() {
                         address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
                         functionName: 'joinGame',
                         args: [gameIdInput],
-                        value: gameInfo.stake,
+                        value: BigInt(gameInfo.stake),
                     });
 
 

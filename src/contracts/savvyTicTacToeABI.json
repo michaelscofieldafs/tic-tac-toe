@@ -295,6 +295,19 @@
     {
         "inputs": [
             {
+                "internalType": "uint256",
+                "name": "newMoveTimeout",
+                "type": "uint256"
+            }
+        ],
+        "name": "setMoveTimeoutMinutes",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "address",
                 "name": "newOwner",
                 "type": "address"
@@ -673,7 +686,7 @@
     },
     {
         "inputs": [],
-        "name": "MOVE_TIMEOUT",
+        "name": "moveTimeout",
         "outputs": [
             {
                 "internalType": "uint256",

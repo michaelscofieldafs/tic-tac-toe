@@ -58,7 +58,7 @@ export const usePlayerGameStatus = ({ playerAddress }: PlayerGameStatusProps) =>
         } catch (err) {
         }
 
-        setStatusText('Create or join a match…');
+        setStatusText('Create or join a match');
         setStatusType(PlayerGameStatus.None);
         setCurrentGameId(null);
     };

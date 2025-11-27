@@ -23,6 +23,7 @@ contract SavvyGirlOnchainTicTacToe is ReentrancyGuard, Ownable {
     uint256 public feeBP = 300;
     uint256 public constant BP_DIVISOR = 10000;
     uint256 public maxResultsLimit = 10;
+    uint256 public moveTimeout = 5 minutes;
 
     struct Game {
         address host;
@@ -47,8 +48,6 @@ contract SavvyGirlOnchainTicTacToe is ReentrancyGuard, Ownable {
     }
 
     Game[] public games;
-
-    uint256 public constant MOVE_TIMEOUT = 5 minutes;
 
     mapping(address => uint256) public activeGameOfHost;
 
@@ -84,13 +83,13 @@ contract SavvyGirlOnchainTicTacToe is ReentrancyGuard, Ownable {
         feeBP = _newBP;
     }
 
+    function setMoveTimeoutMinutes(uint256 newMoveTimeout) external onlyOwner {
+        moveTimeout = newMoveTimeout * 1 minutes;
+    }
+
     function setMaxResultsLimit(uint256 newLimit) external onlyOwner {
         maxResultsLimit = newLimit;
     }
-
-    // ==============================
-    //   CREATE GAME (CORRIGIDO)
-    // ==============================
 
     function createGame(
         uint256 stake
@@ -99,13 +98,11 @@ contract SavvyGirlOnchainTicTacToe is ReentrancyGuard, Ownable {
 
         uint256 activeId = activeGameOfHost[msg.sender];
 
-        // Se for a primeira vez, activeId será 0 → substitui pelo sentinel
         if (activeId == 0) {
             activeGameOfHost[msg.sender] = type(uint256).max;
             activeId = type(uint256).max;
         }
 
-        // Checa se o host já tem jogo ativo (e não terminado)
         if (activeId != type(uint256).max) {
             require(
                 activeId < games.length &&
@@ -387,7 +384,7 @@ contract SavvyGirlOnchainTicTacToe is ReentrancyGuard, Ownable {
 
         require(msg.sender == activePlayer, "not active player");
 
-        require(block.timestamp > g.lastMoveAt + MOVE_TIMEOUT, "not timed out");
+        require(block.timestamp > g.lastMoveAt + moveTimeout, "not timed out");
 
         g.state = GameState.Finished;
         g.winner = msg.sender;

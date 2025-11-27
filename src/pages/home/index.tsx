@@ -41,6 +41,7 @@ export default function TicTacToeOnChain() {
     const [gameIdInput, setGameIdInput] = useState('');
     const [isLoadingMove, setIsLoadingMove] = useState(false);
     const [isLoadingCancelGame, setIsLoadingCancelGame] = useState(false);
+    const [isLoadingCreateGame, setIsLoadingCreateGame] = useState(false);
     const [fee, setFee] = useState(0);
 
     // HOOKS
@@ -99,7 +100,7 @@ export default function TicTacToeOnChain() {
         args: currentGameIdRef.current !== null ? [currentGameIdRef.current] : undefined,
         query: {
             enabled: currentGameIdRef.current !== null && !isPlayMoveRef.current && !isFetchingGame.current,
-            refetchInterval: 2000,
+            refetchInterval: 1000,
         },
     }) as any;
 
@@ -137,6 +138,8 @@ export default function TicTacToeOnChain() {
             open: true,
             callback: async () => {
                 try {
+                    setIsLoadingCreateGame(true);
+
                     let txHash = await writeContract(wagmiAdapter.wagmiConfig, {
                         abi: savvyTicTacToeABI,
                         address: getContractAddressByChainId(Number(currentChainRef.current)) as Address,
@@ -156,6 +159,9 @@ export default function TicTacToeOnChain() {
                     }
                 } catch (err: any) {
                     showToast("Error creating the game. Please try again!", "error")
+                }
+                finally {
+                    setIsLoadingCreateGame(false);
                 }
             }
         }
@@ -217,9 +223,7 @@ export default function TicTacToeOnChain() {
 
                 setShowModal(showModalInfo);
 
-                setTimeout(() => {
-                    isFetchingGame.current = false;
-                }, 1000);
+                isFetchingGame.current = false;
             }
             else if (mappedGame.state === 2 && mappedGame.challenger != ZERO_ADDRESS) {
                 playLoss();
@@ -237,9 +241,7 @@ export default function TicTacToeOnChain() {
 
                 setShowModal(showModalInfo);
 
-                setTimeout(() => {
-                    isFetchingGame.current = false;
-                }, 1000);
+                isFetchingGame.current = false;
             }
             else {
                 setCurrentGame(mappedGame);
@@ -561,6 +563,7 @@ export default function TicTacToeOnChain() {
             const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, { hash })
 
             if (receipt.status === 'success') {
+                isPlayMoveRef.current = false;
                 refetchBoard()
                 playMove();
                 await Promise.all([,
@@ -658,7 +661,7 @@ export default function TicTacToeOnChain() {
         const unwatch = watchBlocks(wagmiAdapter.wagmiConfig, {
             blockTag: 'latest',
             chainId: Number(currentChainRef.current),
-            pollingInterval: 2000,
+            pollingInterval: 1000,
             onBlock({ number }: any) {
                 // Refresh available games list, the player's current status (host/challenger),
                 // the active game if there's one running, and the game board state.
@@ -741,7 +744,10 @@ export default function TicTacToeOnChain() {
     border-[1px] border-[#FCDAAD]/70
     shadow-[0_0_24px_#FCDAAD50]
 ">
-                    <header className="flex flex-col md:flex-row items-center md:items-center justify-between gap-4 mb-6 text-center md:text-left">
+                    <motion.header
+                        initial={{ opacity: 0, y: -24 }}
+                        animate={{ opacity: 2, y: 0 }}
+                        transition={{ duration: 1, ease: "easeOut" }} className="flex flex-col md:flex-row items-center md:items-center justify-between gap-4 mb-6 text-center md:text-left">
                         <div className="flex items-center gap-4">
                             <img
                                 src="/assets/images/logo-2.png"
@@ -756,12 +762,15 @@ export default function TicTacToeOnChain() {
                         <div className="flex items-center gap-3">
                             <WalletButton />
                         </div>
-                    </header>
+                    </motion.header>
                     <main className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
                         {/* Board */}
                         <section className="col-span-1 md:col-span-2">
                             <div className="mx-auto w-[320px] sm:w-[420px]">
-                                <div className="flex justify-center items-center h-full">
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.15 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 1, ease: "easeOut" }} className="flex justify-center items-center h-full">
                                     <div className="mb-2 text-sm text-slate-300 font-semibold text-center">
                                         {statusType === PlayerGameStatus.WaitingForOpponent ? (
                                             <a
@@ -777,8 +786,11 @@ export default function TicTacToeOnChain() {
                                             statusText
                                         )}
                                     </div>
-                                </div>
-                                <div className="grid grid-cols-3 gap-4 p-6 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)] rounded-2xl border border-slate-700">
+                                </motion.div>
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.15 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 1, ease: "easeOut" }} className="grid grid-cols-3 gap-4 p-6 bg-gradient-to-b from-[rgba(255,255,255,0.02)] to-[rgba(255,255,255,0.01)] rounded-2xl border border-slate-700">
                                     {board.map((cell, i) => {
                                         const isWinning = winnerInfo && winnerInfo.line.includes(i);
                                         return (
@@ -816,7 +828,7 @@ export default function TicTacToeOnChain() {
                                             </motion.button>
                                         );
                                     })}
-                                </div>
+                                </motion.div>
                                 {currentGame?.state === GameState.InProgress &&
                                     <div className="mt-4 flex items-center justify-between text-sm text-slate-300">
                                         <div>Turn: <span className="font-semibold text-white">
@@ -857,7 +869,14 @@ export default function TicTacToeOnChain() {
                                                 }}
                                             />
                                             <button
-                                                className="px-4 py-2 bg-green-600 rounded text-white font-semibold"
+                                                className={`
+        px-4 py-2 rounded font-semibold
+        ${!isLoadingCreateGame
+                                                        ? "bg-green-600 text-white cursor-pointer"
+                                                        : "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                                    }
+    `}
+                                                disabled={isLoadingCreateGame}
                                                 onClick={() => handleCreateGame(stakeInput.replaceAll(",", "."))}
                                             >
                                                 Create Now
